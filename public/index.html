@@ -127,7 +127,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:26px}
 <section>
   <h2><span class="num">1</span>Sondaggio Location</h2>
   <p>Dove facciamo l'asta?</p>
-  <div class="opts">
+  <div class="opts" id="locOpts">
     <div class="opt" data-loc="teatro">
       <div class="t">🎭 Teatro Spazio</div>
       <div class="d">La location abituale, quella di sempre.</div>
@@ -181,10 +181,27 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:26px}
 </section>
 
 <section>
-  <h2><span class="num">5</span>Mercato: scambi e svincolati</h2>
+  <h2><span class="num">5</span>Proposta: riapertura mercato in sosta nazionali</h2>
   <p>Negli anni passati avevamo sempre almeno una settimana tra l'asta e la prima giornata per fare scambi e comprare svincolati. Quest'anno, con l'asta di giovedì sera e la formazione da dare entro le <strong>20.45 di venerdì</strong>, quel tempo non c'è.</p>
-  <p>Poiché è prevista una <strong>lunga sosta per le nazionali</strong> dopo le prime 3 giornate di fantacalcio (tra la 5ª e la 6ª di Serie A, <strong>20/09 → 10/10</strong>), in quella finestra si <strong>riapre il mercato</strong>: scambi tra squadre e acquisto svincolati per chi ha ancora budget.</p>
-  <div class="note"><strong>Deroga valida solo per quest'anno:</strong> la regola attuale prevede che un giocatore non possa passare per più di 2 squadre. Con questa riapertura, i giocatori potranno essere scambiati fino a <strong>3 squadre</strong>.</div>
+  <p><strong>La proposta è questa:</strong> poiché è prevista una <strong>lunga sosta per le nazionali</strong> dopo le prime 3 giornate di fantacalcio (tra la 5ª e la 6ª di Serie A, <strong>20/09 → 10/10</strong>), in quella finestra si <strong>riapre il mercato</strong> — scambi tra squadre e acquisto svincolati per chi ha ancora budget — così tutti recuperano il tempo che quest'anno manca prima dell'asta.</p>
+  <div class="note"><strong>Deroga proposta, valida solo per quest'anno:</strong> la regola attuale prevede che un giocatore non possa passare per più di 2 squadre. Con questa riapertura, i giocatori potrebbero essere scambiati fino a <strong>3 squadre</strong>.</div>
+  <p style="margin-top:16px">Sei d'accordo con la proposta?</p>
+  <div class="opts" id="mktOpts">
+    <div class="opt" data-mkt="favorevole">
+      <div class="t">👍 Favorevole</div>
+      <div class="d">Riapriamo il mercato durante la sosta, con la deroga alle 3 squadre.</div>
+    </div>
+    <div class="opt" data-mkt="contrario">
+      <div class="t">👎 Non favorevole</div>
+      <div class="d">Lasciamo le regole di sempre, niente riapertura.</div>
+    </div>
+  </div>
+  <div class="cnt"><span>👍 Favorevole</span><span id="nFav">0 voti</span></div>
+  <div class="bar"><i id="barFav"></i></div>
+  <div class="voters" id="vFav"></div>
+  <div class="cnt"><span>👎 Non favorevole</span><span id="nContra">0 voti</span></div>
+  <div class="bar"><i id="barContra"></i></div>
+  <div class="voters" id="vContra"></div>
 </section>
 
 <footer>Le risposte si aggiornano automaticamente ogni 10 secondi · Asta 3 settembre 2026</footer>
@@ -192,7 +209,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:26px}
 
 <script>
 const TEAMS = ["Pandamonio","Minturno Scauri","Bestie Di Satana","Spaccio Uno","Diavolone Luis","Dr.Gonzo Social Club","S. Masterella","Atletico Califfo","Real Spillo","Chivas Tramuort"];
-let STATE = {loc:{},orari:{},nec:{},necNote:{}};
+let STATE = {loc:{},orari:{},nec:{},necNote:{},mercato:{}};
 let ME = null;   // impostata dal server tramite cookie di sessione
 
 const $ = id => document.getElementById(id);
@@ -273,7 +290,7 @@ function renderAuth(){
 }
 
 /* ---------- location ---------- */
-document.querySelectorAll(".opt").forEach(o=>{
+document.querySelectorAll("#locOpts .opt").forEach(o=>{
   o.addEventListener("click", ()=>{
     if(!ME){ say("Inserisci il PIN per votare", "err"); return; }
     push("loc", STATE.loc[ME]===o.dataset.loc ? null : o.dataset.loc);
@@ -281,7 +298,7 @@ document.querySelectorAll(".opt").forEach(o=>{
 });
 function renderLoc(){
   const mine = ME ? STATE.loc[ME] : null;
-  document.querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel", mine===o.dataset.loc));
+  document.querySelectorAll("#locOpts .opt").forEach(o=>o.classList.toggle("sel", mine===o.dataset.loc));
   const teatro = TEAMS.filter(t=>STATE.loc[t]==="teatro");
   const cesano = TEAMS.filter(t=>STATE.loc[t]==="cesano");
   const tot = Math.max(teatro.length+cesano.length, 1);
@@ -363,7 +380,28 @@ function renderNec(){
   });
 }
 
-function renderAll(){ renderAuth(); renderLoc(); renderOrari(); renderNec(); }
+/* ---------- mercato (proposta) ---------- */
+document.querySelectorAll("#mktOpts .opt").forEach(o=>{
+  o.addEventListener("click", ()=>{
+    if(!ME){ say("Inserisci il PIN per votare", "err"); return; }
+    push("mercato", STATE.mercato[ME]===o.dataset.mkt ? null : o.dataset.mkt);
+  });
+});
+function renderMercato(){
+  const mine = ME ? STATE.mercato[ME] : null;
+  document.querySelectorAll("#mktOpts .opt").forEach(o=>o.classList.toggle("sel", mine===o.dataset.mkt));
+  const fav = TEAMS.filter(t=>STATE.mercato[t]==="favorevole");
+  const contra = TEAMS.filter(t=>STATE.mercato[t]==="contrario");
+  const tot = Math.max(fav.length+contra.length, 1);
+  $("nFav").textContent = fav.length + (fav.length===1?" voto":" voti");
+  $("nContra").textContent = contra.length + (contra.length===1?" voto":" voti");
+  $("barFav").style.width = (fav.length/tot*100)+"%";
+  $("barContra").style.width = (contra.length/tot*100)+"%";
+  $("vFav").textContent = fav.join(" · ");
+  $("vContra").textContent = contra.join(" · ");
+}
+
+function renderAll(){ renderAuth(); renderLoc(); renderOrari(); renderNec(); renderMercato(); }
 
 pull();
 setInterval(pull, 10000);

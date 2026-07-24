@@ -43,7 +43,7 @@ async function redis(cmd) {
 }
 
 function emptyState() {
-  return { loc: {}, orari: {}, nec: {}, necNote: {}, updated: null };
+  return { loc: {}, orari: {}, nec: {}, necNote: {}, mercato: {}, updated: null };
 }
 
 async function readState() {
@@ -215,10 +215,15 @@ export default async function handler(req, res) {
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
       const { field, value } = body;
 
-      if (!['loc', 'orari', 'nec', 'necNote'].includes(field)) {
+      if (!['loc', 'orari', 'nec', 'necNote', 'mercato'].includes(field)) {
         return res.status(400).json({ error: 'Campo non valido' });
       }
-      const allowed = { loc: ['teatro', 'cesano'], orari: ['19', '20'], nec: ['si', 'no'] };
+      const allowed = {
+        loc: ['teatro', 'cesano'],
+        orari: ['19', '20'],
+        nec: ['si', 'no'],
+        mercato: ['favorevole', 'contrario'],
+      };
       if (field === 'necNote') {
         if (typeof value !== 'string' || value.length > 300) {
           return res.status(400).json({ error: 'Nota non valida (max 300 caratteri).' });
