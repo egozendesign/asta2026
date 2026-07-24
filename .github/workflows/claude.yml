@@ -9,24 +9,18 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Usa l'abbonamento Claude (Pro/Max) tramite token OAuth.
+      # Il token va aggiunto nei Secrets del repo come CLAUDE_CODE_OAUTH_TOKEN
+      # (generalo in locale con: claude setup-token). NON scrivere il token qui.
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@v1
         with:
-          node-version: '20'
-
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
-
-      - name: Execute Claude Code
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Sostituire con il task specifico richiesto al modello
-          claude -p "Review the latest changes in this pull request and output findings."
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: "Review the latest changes in this pull request and output findings."
