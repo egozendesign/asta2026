@@ -228,7 +228,7 @@ export default async function handler(req, res) {
         if (typeof value !== 'string' || value.length > 300) {
           return res.status(400).json({ error: 'Nota non valida (max 300 caratteri).' });
         }
-      } else if (value !== null && !allowed[field].includes(value)) {
+      } else if (value !== null && value !== '' && !allowed[field].includes(value)) {
         return res.status(400).json({ error: 'Valore non valido' });
       }
 
