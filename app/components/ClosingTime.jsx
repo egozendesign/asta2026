@@ -54,8 +54,8 @@ export default function ClosingTime() {
       </ul>
 
       <p style={{ marginTop: 18 }}>
-        Segnala qui se la tua squadra ha una <strong>necessità REALE</strong> di chiudere alle 2 e non
-        oltre (lavoro il giorno dopo o altri impegni seri).
+        Se la tua squadra ha una <strong>necessità REALE</strong> di chiudere alle 2 e non
+        oltre, puoi segnalare la motivazione.
       </p>
       <div className="note info">
         Le <strong>squadre singole</strong> hanno più potere decisionale. Per le squadre in coppia la
@@ -63,7 +63,7 @@ export default function ClosingTime() {
       </div>
 
       <div className="proposal">
-        <div className="ptitle">La tua segnalazione</div>
+        <div className="ptitle">Indica la disponibilità della Squadra</div>
         <div className="choice">
           <button type="button" className={mineVal === 'no' ? 'on' : ''} onClick={() => pick('no')}>
             Flessibile
