@@ -34,11 +34,6 @@ export default function RuleForm() {
   return (
     <AnimatedSection>
       <h2><span className="num alt">+</span>Proponi una modifica</h2>
-      <p>
-        Scrivi la proposta come la leggeranno gli altri: un titolo chiaro, cosa cambia e perché.
-        Comparirà qui sotto in fondo all’elenco, numerata e a nome della tua squadra.
-      </p>
-
       <form className="proposal" onSubmit={submit}>
         <div className="ptitle">
           {me ? <>Proposta di {me}</> : 'Serve il PIN per proporre'}
