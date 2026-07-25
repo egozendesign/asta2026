@@ -7,13 +7,12 @@ export default function RulesIntro() {
     <AnimatedSection>
       <h2><span className="num">4</span>Proposte di modifica del regolamento</h2>
       <p>
-        Quest’anno il tempo prima dell’asta non c’è: non possiamo permetterci di aprire discussioni
-        sul regolamento la sera stessa, in dieci intorno a un tavolo e con l’orologio che corre.
+        Quest’anno il tempo prima dell’asta non c’è, non possiamo discutere del regolamento la sera stessa.
       </p>
       <p>
-        Per questo <strong>ogni proposta di modifica si fa qui</strong>, in anticipo: si scrive, la si
-        legge con calma nei giorni che restano e si vota. L’obiettivo è arrivare al{' '}
-        <strong>3 settembre con il regolamento già definito</strong> e dedicare la serata solo all’asta.
+        Per questo <strong>ogni proposta di modifica si fa qui</strong>, in anticipo: si scrive, si
+        legge e se ne discute in chat eventualmente e si vota. L’obiettivo è arrivare al{' '}
+        <strong>3 settembre con il regolamento già definito</strong>.
       </p>
       <div className="note info">
         Ogni proposta ha un numero, il nome di chi l’ha presentata e due pulsanti per dire se sei{' '}
