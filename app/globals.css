@@ -33,7 +33,7 @@ body{margin:0;color:var(--txt);
   background:
     radial-gradient(1100px 560px at 50% -8%, rgba(34,197,93,.14), transparent 60%),
     radial-gradient(760px 480px at 108% 12%, rgba(181,205,126,.07), transparent 55%),
-    linear-gradient(rgba(7,11,9,.76), rgba(7,11,9,.82)),
+    linear-gradient(rgba(40,60,23,.20), rgba(40,60,23,.60)),
     url("/bg_def.jpg") 0 0/300px 300px repeat,
     var(--bg);
   background-attachment:fixed;
