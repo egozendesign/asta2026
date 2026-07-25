@@ -85,10 +85,6 @@ export default function LocationPoll({ index }) {
     <AnimatedSection index={index}>
       <h2><span className="num">1</span>Sondaggio Location</h2>
       <p>Dove facciamo l’asta?</p>
-      <div className="note">
-        La <strong>casa del papà del Master a Cesano non è più disponibile</strong>: al suo posto c’è
-        l’opzione libera qui sotto, dove ognuno può proporre un’alternativa.
-      </div>
       <OptionCards options={OPTIONS} field="loc" />
 
       <AnimatePresence initial={false}>
