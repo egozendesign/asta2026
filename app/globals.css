@@ -76,7 +76,7 @@ header{position:relative;border-radius:28px;padding:1px;margin-bottom:16px;
   color:var(--acc);font-weight:600;font-size:13px;letter-spacing:.02em;
   background:var(--acc-soft);border:1px solid rgba(34,197,93,.28);
   padding:6px 14px;border-radius:9999px}
-.hero .sub{color:var(--muted);font-size:13.5px;font-weight:400;margin-top:12px;max-width:42ch}
+.hero .sub{color:var(--txt);font-size:13.5px;font-weight:400;margin-top:12px;max-width:60ch}
 @media(max-width:600px){
   .hero{flex-direction:column;text-align:center;gap:18px;padding:30px 22px 26px}
   .hero .logo{width:148px;height:148px}
