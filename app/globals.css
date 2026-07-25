@@ -45,7 +45,7 @@ body::before{
     url("/bg_def.jpg") 0 0/300px 300px repeat,
     var(--bg);
 }
-.wrap{max-width:740px;margin:0 auto;padding:20px 16px 96px}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 96px}
 
 strong{color:#fff;font-weight:600}
 p{margin:10px 0;color:var(--txt)}
