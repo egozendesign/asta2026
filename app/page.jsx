@@ -7,23 +7,28 @@ import IntroSection from './components/IntroSection';
 import LocationPoll from './components/LocationPoll';
 import TimePoll from './components/TimePoll';
 import ClosingTime from './components/ClosingTime';
-import NeedsTable from './components/NeedsTable';
+import RulesIntro from './components/RulesIntro';
+import RuleForm from './components/RuleForm';
 import MarketProposal from './components/MarketProposal';
+import RuleList from './components/RuleList';
 
-/* `index` serve solo alla cascata di entrata: le sezioni già visibili al primo
-   accesso compaiono una dopo l'altra invece che tutte insieme. */
+/* Le sezioni entrano da sole in base allo scroll (vedi AnimatedSection): qui si
+   decide solo l'ordine. I box numerati in verde sono i 4 argomenti; sotto la
+   sezione 4 partono le proposte di regolamento, numerate in rosso da 1. */
 export default function Page() {
   return (
     <AstaProvider>
       <div className="wrap">
         <Hero />
         <AuthBar />
-        <IntroSection index={0} />
-        <LocationPoll index={1} />
-        <TimePoll index={2} />
-        <ClosingTime index={3} />
-        <NeedsTable index={4} />
-        <MarketProposal index={5} />
+        <IntroSection />
+        <LocationPoll />
+        <TimePoll />
+        <ClosingTime />
+        <RulesIntro />
+        <RuleForm />
+        <MarketProposal n={1} />
+        <RuleList startAt={2} />
         <footer>Le risposte si aggiornano automaticamente ogni 10 secondi · Asta 3 settembre 2026</footer>
       </div>
     </AstaProvider>
