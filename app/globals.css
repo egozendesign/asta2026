@@ -19,7 +19,7 @@
   --txt:#F1F4F1; --muted:#A2AEA7;
   --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.12);
   --danger:#f26060;
-  --shadow:0 40px 80px -28px rgba(0,0,0,.9);
+  --shadow:0 0px 15px 1px rgba(0,0,0,.7);
   --hi:inset 0 1px 0 rgba(255,255,255,.05);
 }
 *{box-sizing:border-box}
