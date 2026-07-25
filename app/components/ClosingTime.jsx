@@ -1,8 +1,8 @@
 import AnimatedSection from './AnimatedSection';
 
-export default function ClosingTime() {
+export default function ClosingTime({ index }) {
   return (
-    <AnimatedSection>
+    <AnimatedSection index={index}>
       <h2><span className="num">3</span>Orario di Chiusura</h2>
       <p>
         Una volta fissato l’inizio si definisce la fine, che sarà <strong>tra le 2 e le 3 di notte</strong>.

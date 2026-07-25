@@ -11,8 +11,10 @@
    ===================================================================== */
 
 :root{
-  --bg:#121815; --surface:#0B0F0D;
-  --glass:rgba(18,24,21,.55); --glass-2:rgba(11,15,13,.6);
+  /* --bg è volutamente più scuro dei box: il tappeto di foglie deve leggersi
+     dietro, e i box devono staccarsi invece di confondersi con lo sfondo. */
+  --bg:#070B09; --surface:#0B0F0D;
+  --glass:rgba(24,32,28,.78); --glass-2:rgba(15,21,18,.8);
   --acc:#22C55D; --acc-soft:rgba(34,197,93,.14); --tert:#C9DE96;
   --txt:#F1F4F1; --muted:#A2AEA7;
   --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.12);
@@ -25,9 +27,13 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;color:var(--txt);
   font-family:var(--font-inter),"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   font-weight:400;font-size:15px;line-height:1.62;letter-spacing:-.01em;
+  /* sfondo: aloni verdi + due passate di foglie di cannabis (stesso tile a due
+     scale/offset diversi, così il tappeto non sembra una griglia) + colore base */
   background:
-    radial-gradient(1100px 560px at 50% -8%, rgba(34,197,93,.13), transparent 60%),
+    radial-gradient(1100px 560px at 50% -8%, rgba(34,197,93,.14), transparent 60%),
     radial-gradient(760px 480px at 108% 12%, rgba(181,205,126,.07), transparent 55%),
+    url("/pattern-leaves.svg") 0 0/300px 300px repeat,
+    url("/pattern-leaves.svg") 105px 155px/175px 175px repeat,
     var(--bg);
   background-attachment:fixed;
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
@@ -135,6 +141,22 @@ select option{background:var(--surface);color:var(--txt)}
   font-weight:700;font-size:14px}
 .opt .t{font-weight:600;margin-bottom:3px;color:#fff;font-size:15px}
 .opt .d{font-size:13px;color:var(--muted);line-height:1.5;padding-right:16px}
+
+/* ---------- proposta libera (sondaggio location) ---------- */
+.ptitle{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--acc);margin-bottom:9px}
+.proposal{margin:14px 0 4px;border:1px solid rgba(34,197,93,.3);background:var(--acc-soft);
+  border-radius:14px;padding:14px 15px}
+.prow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.pcount{font-size:12px;color:var(--muted);margin-left:auto}
+.props{margin-top:18px;display:grid;gap:10px}
+.props .ptitle{margin-bottom:0}
+.prop{border:1px solid var(--line);border-left:2px solid var(--line-2);background:var(--glass-2);
+  border-radius:12px;padding:11px 14px}
+.prop.mine{border-left-color:var(--acc);background:var(--acc-soft)}
+.prop .who{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.prop.mine .who{color:var(--acc)}
+.prop .txt{font-size:14px;color:var(--txt);white-space:pre-wrap;overflow-wrap:anywhere}
 
 /* ---------- bars / voters ---------- */
 .cnt{font-size:13px;color:var(--muted);margin:12px 0 6px;display:flex;justify-content:space-between;font-weight:500}

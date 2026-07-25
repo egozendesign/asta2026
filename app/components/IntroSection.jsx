@@ -1,8 +1,8 @@
 import AnimatedSection from './AnimatedSection';
 
-export default function IntroSection() {
+export default function IntroSection({ index }) {
   return (
-    <AnimatedSection>
+    <AnimatedSection index={index}>
       <h2><span className="num">!</span>Perché di giovedì sera</h2>
       <p>
         Ci servono <strong>36 giornate piene</strong> per completare i 4 gironi. La{' '}
