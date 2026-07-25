@@ -119,7 +119,7 @@ export default function ClosingTime() {
       </table>
 
       <div className="note" style={{ marginTop: 16 }}>
-        <strong style={{ color: red }}>IMPORTANTE</strong>: se all’orario di chiusura stabilito (le 2, o quello
+        <strong style={{ color: 'red' }}>IMPORTANTE</strong>: se all’orario di chiusura stabilito (le 2, o quello
         concordato) qualcuno che deve necessariamente andare via ha ancora <strong>buchi in rosa</strong>,{' '}
         <em>solo in quel caso</em> e <em>solo per le squadre che lo hanno segnalato qui in anticipo</em>,
         si potranno chiamare giocatori non ancora usciti per completare la rosa. Questi giocatori, come
