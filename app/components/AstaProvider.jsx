@@ -8,7 +8,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 const AstaCtx = createContext(null);
 export const useAsta = () => useContext(AstaCtx);
 
-const EMPTY = { loc: {}, locNote: {}, orari: {}, nec: {}, necNote: {}, mercato: {} };
+const EMPTY = { loc: {}, locNote: {}, orari: {}, nec: {}, necNote: {}, mercato: {}, regole: [] };
 
 export default function AstaProvider({ children }) {
   const [state, setState] = useState(EMPTY);
@@ -54,6 +54,37 @@ export default function AstaProvider({ children }) {
     }
   }, []);
 
+  /* Proposte di regolamento: non sono "una riga per squadra" come gli altri campi,
+     quindi passano da azioni dedicate invece che da push(field, value).
+     Restituisce true/false così il form sa se può chiudersi. */
+  const ruleAction = useCallback(async (action, payload) => {
+    if (!meRef.current) { setStatus({ msg: 'Inserisci il PIN per partecipare', cls: 'err' }); return false; }
+    setStatus({ msg: 'salvo…', cls: 'wait' });
+    try {
+      const r = await fetch(`/api/state?action=${action}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (d.error) {
+        if (r.status === 401) setMe(null);
+        throw new Error(d.error);
+      }
+      setState(d.state);
+      setStatus({ msg: 'salvato ✓', cls: 'ok' });
+      return true;
+    } catch (e) {
+      setStatus({ msg: e.message, cls: 'err' });
+      return false;
+    }
+  }, []);
+
+  const addRule = useCallback((title, text, note) => ruleAction('rule-add', { title, text, note }), [ruleAction]);
+  const voteRule = useCallback((id, vote) => ruleAction('rule-vote', { id, vote }), [ruleAction]);
+  const delRule = useCallback((id) => ruleAction('rule-del', { id }), [ruleAction]);
+
   const login = useCallback(async (team, pin) => {
     if (!team) { setStatus({ msg: 'Seleziona la squadra', cls: 'err' }); return false; }
     if (!/^\d{4}$/.test(pin)) { setStatus({ msg: 'PIN: 4 cifre', cls: 'err' }); return false; }
@@ -95,7 +126,7 @@ export default function AstaProvider({ children }) {
   }, [pull]);
 
   return (
-    <AstaCtx.Provider value={{ state, me, status, push, login, logout, notify }}>
+    <AstaCtx.Provider value={{ state, me, status, push, login, logout, notify, addRule, voteRule, delRule }}>
       {children}
     </AstaCtx.Provider>
   );

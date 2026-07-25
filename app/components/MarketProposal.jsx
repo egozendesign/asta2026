@@ -1,26 +1,25 @@
 'use client';
 
 import AnimatedSection from './AnimatedSection';
-import OptionCards from './OptionCards';
-import ResultBars from './ResultBars';
+import ProposalVote from './ProposalVote';
 import { TEAMS } from '../lib/constants';
 import { useAsta } from './AstaProvider';
 
-const OPTIONS = [
-  { key: 'favorevole', title: '👍 Favorevole', desc: 'Riapriamo il mercato durante la sosta, con la deroga alle 3 squadre durante la stagione 26/27.' },
-  { key: 'contrario', title: '👎 Non favorevole', desc: 'Lasciamo le regole di sempre, niente riapertura.' },
-];
+/* Proposta n.1 — è la più vecchia e resta scritta nel codice (i voti stanno nel
+   campo `mercato`, da prima che esistessero le proposte libere). Da fuori è
+   identica alle altre: stesso numero rosso, stesso proponente, stesso voto. */
+export default function MarketProposal({ n }) {
+  const { state, me, push } = useAsta();
 
-export default function MarketProposal({ index }) {
-  const { state } = useAsta();
-  const rows = [
-    { key: 'favorevole', label: '👍 Favorevole', voters: TEAMS.filter((t) => state.mercato[t] === 'favorevole') },
-    { key: 'contrario', label: '👎 Non favorevole', voters: TEAMS.filter((t) => state.mercato[t] === 'contrario') },
-  ];
+  const votes = state.mercato || {};
+  const mine = me ? { favorevole: 'up', contrario: 'down' }[votes[me]] || null : null;
+
+  const vote = (v) => push('mercato', v === 'up' ? 'favorevole' : v === 'down' ? 'contrario' : null);
 
   return (
-    <AnimatedSection index={index}>
-      <h2><span className="num">5</span>Proposta: riapertura mercato in sosta nazionali</h2>
+    <AnimatedSection className="rule">
+      <h2><span className="num alt">{n}</span>Proposta: Riapertura mercato in sosta nazionali</h2>
+      <div className="by">Proposta di <strong>Gli Admin</strong></div>
       <p>
         Negli anni passati avevamo sempre almeno una settimana tra l’asta e la prima giornata per fare
         scambi e comprare svincolati. Quest’anno, con l’asta di giovedì sera e la formazione da dare
@@ -38,9 +37,12 @@ export default function MarketProposal({ index }) {
         giocatore non possa passare per più di 2 squadre. Con questa riapertura, i giocatori potrebbero
         essere scambiati fino a <strong>3 squadre</strong>.
       </div>
-      <p style={{ marginTop: 16 }}>Sei d’accordo con la proposta?</p>
-      <OptionCards options={OPTIONS} field="mercato" />
-      <ResultBars rows={rows} />
+      <ProposalVote
+        mine={mine}
+        upVoters={TEAMS.filter((t) => votes[t] === 'favorevole')}
+        downVoters={TEAMS.filter((t) => votes[t] === 'contrario')}
+        onVote={vote}
+      />
     </AnimatedSection>
   );
 }

@@ -15,7 +15,7 @@ const OPTIONS = [
   { key: 'altra', title: '💡 Hai un’altra proposta?', desc: 'Vota qui e scrivi dove faresti l’asta: la proposta resta scritta qui sotto.' },
 ];
 
-export default function LocationPoll({ index }) {
+export default function LocationPoll() {
   const { state, me, push } = useAsta();
   const reduce = useReducedMotion();
 
@@ -82,7 +82,7 @@ export default function LocationPoll({ index }) {
       };
 
   return (
-    <AnimatedSection index={index}>
+    <AnimatedSection>
       <h2><span className="num">1</span>Sondaggio Location</h2>
       <p>Dove facciamo l’asta?</p>
       <OptionCards options={OPTIONS} field="loc" />
