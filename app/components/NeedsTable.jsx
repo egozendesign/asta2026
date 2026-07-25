@@ -92,7 +92,7 @@ export default function NeedsTable({ index }) {
         concordato) qualcuno che deve necessariamente andare via ha ancora <strong>buchi in rosa</strong>,{' '}
         <em>solo in quel caso</em> e <em>solo per le squadre che lo hanno segnalato qui in anticipo</em>,
         si potranno chiamare giocatori non ancora usciti per completare la rosa. Questi giocatori, come
-        tutti gli altri, saranno comunque <strong>soggetti ad asta completa</strong>.
+        tutti gli altri, saranno comunque <strong>soggetti ad asta completa</strong> con i soliti tempi tecnici .
       </div>
     </AnimatedSection>
   );
