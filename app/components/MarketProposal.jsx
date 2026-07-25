@@ -7,7 +7,7 @@ import { TEAMS } from '../lib/constants';
 import { useAsta } from './AstaProvider';
 
 const OPTIONS = [
-  { key: 'favorevole', title: '👍 Favorevole', desc: 'Riapriamo il mercato durante la sosta, con la deroga alle 3 squadre.' },
+  { key: 'favorevole', title: '👍 Favorevole', desc: 'Riapriamo il mercato durante la sosta, con la deroga alle 3 squadre durante la stagione 26/27.' },
   { key: 'contrario', title: '👎 Non favorevole', desc: 'Lasciamo le regole di sempre, niente riapertura.' },
 ];
 
