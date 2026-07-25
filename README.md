@@ -1,13 +1,33 @@
 # Asta Fantacalcio 2026 — pagina condivisa con PIN
 
+App **React + Next.js** (App Router). Tema scuro/vetro/verde, animazioni con
+Framer Motion, dati su Upstash Redis, login con PIN per squadra.
+
 ```
 asta/
-├── api/state.js       # API serverless: login, lettura, scrittura
-├── public/index.html  # la pagina
-├── setup-env.cjs      # genera le env var (da eseguire in locale)
-├── package.json
-└── .gitignore
+├── app/
+│   ├── layout.jsx            # layout, font Inter, metadati
+│   ├── page.jsx              # la pagina (compone i componenti)
+│   ├── globals.css           # design system (scuro/vetro/verde) + Tailwind
+│   ├── components/           # Hero, AuthBar, sezioni, voti, barre
+│   ├── lib/constants.js      # elenco squadre (client + server)
+│   └── api/state/route.js    # API: login, lettura pubblica, scrittura autenticata
+├── public/logo.png           # logo statico
+├── setup-env.cjs             # genera le env var (da eseguire in locale)
+├── tailwind.config.mjs · postcss.config.mjs · next.config.mjs
+└── package.json
 ```
+
+## Sviluppo in locale
+
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+
+Per un test di produzione: `npm run build && npm start`. Senza le variabili
+d'ambiente (sotto) la pagina si vede lo stesso, ma il login/salvataggio risponde
+«Configurazione incompleta».
 
 ## 1. Genera le variabili d'ambiente
 
@@ -23,8 +43,8 @@ Ti chiede i 10 PIN e stampa due valori: `TEAM_PINS` e `SESSION_SECRET`.
 ## 2. Deploy su Vercel
 
 1. Carica il progetto su GitHub, oppure `vercel` da CLI nella cartella.
-   Vercel riconosce da solo `api/` come funzioni e `public/` come statico.
-   Nessun `vercel.json` necessario.
+   Vercel riconosce da solo **Next.js** (build automatica, `app/api` come
+   funzioni). Nessun `vercel.json` necessario.
 
 2. `Storage` → `Create Database` → **Upstash Redis** → collega al progetto.
    Crea automaticamente `KV_REST_API_URL` e `KV_REST_API_TOKEN`.

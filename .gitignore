@@ -1,4 +1,19 @@
+# dipendenze
 node_modules/
+
+# build Next.js
+/.next/
+/out/
+
+# ambiente
 .env
 .env.local
+.env*.local
+
+# deploy
 .vercel
+
+# log e sistema
+npm-debug.log*
+*.tsbuildinfo
+.DS_Store
