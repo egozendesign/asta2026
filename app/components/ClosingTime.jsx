@@ -43,7 +43,7 @@ export default function ClosingTime() {
     <AnimatedSection>
       <h2><span className="num">3</span>Orario di Chiusura</h2>
       <p>
-        Una volta fissato l’inizio si definisce la fine, che sarà <strong>tra le 2 e le 3 di notte</strong>.
+        Una volta fissato l’inizio si definisce la fine, che sarà <strong>tra le 2 e le 3</strong>.
         L’impegno di tutti è chiudere <strong>non oltre le 2</strong>, ma si chiede a tutti flessibilità
         vista la situazione di necessità che si è venuta a creare.
       </p>
@@ -119,7 +119,7 @@ export default function ClosingTime() {
       </table>
 
       <div className="note" style={{ marginTop: 16 }}>
-        <strong>Regola sui buchi in rosa:</strong> se all’orario di chiusura stabilito (le 2, o quello
+        <strong style="color: red;">IMPORTANTE</strong>: se all’orario di chiusura stabilito (le 2, o quello
         concordato) qualcuno che deve necessariamente andare via ha ancora <strong>buchi in rosa</strong>,{' '}
         <em>solo in quel caso</em> e <em>solo per le squadre che lo hanno segnalato qui in anticipo</em>,
         si potranno chiamare giocatori non ancora usciti per completare la rosa. Questi giocatori, come
