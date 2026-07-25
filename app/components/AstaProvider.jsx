@@ -8,7 +8,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 const AstaCtx = createContext(null);
 export const useAsta = () => useContext(AstaCtx);
 
-const EMPTY = { loc: {}, orari: {}, nec: {}, necNote: {}, mercato: {} };
+const EMPTY = { loc: {}, locNote: {}, orari: {}, nec: {}, necNote: {}, mercato: {} };
 
 export default function AstaProvider({ children }) {
   const [state, setState] = useState(EMPTY);

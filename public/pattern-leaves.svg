@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Tappeto di foglie di cannabis a 5 punte: tile ripetibile usato come sfondo
+       della pagina (vedi `body` in app/globals.css).
+       Le foglie stanno tutte dentro il riquadro, quindi la ripetizione non taglia
+       mai una foglia a metà. Il colore è pilotato da fill/fill-opacity qui sotto. -->
+  <defs>
+    <!-- fogliolina seghettata: punta in alto, base nell'origine -->
+    <path id="lf" d="M0,-46 L2,-39.5 L0.9,-38 L3.5,-32 L2.2,-30 L4.7,-24 L3.4,-22 L5.4,-16 L3.9,-14 L4.4,-8 L2.2,-6 L1.1,0 L-1.1,0 L-2.2,-6 L-4.4,-8 L-3.9,-14 L-5.4,-16 L-3.4,-22 L-4.7,-24 L-2.2,-30 L-3.5,-32 L-0.9,-38 L-2,-39.5 Z"/>
+    <!-- foglia completa: 5 foglioline a ventaglio + picciolo -->
+    <g id="leaf">
+      <use href="#lf"/>
+      <use href="#lf" transform="rotate(40) scale(.86) translate(0,-5)"/>
+      <use href="#lf" transform="rotate(-40) scale(.86) translate(0,-5)"/>
+      <use href="#lf" transform="rotate(72) scale(.58) translate(0,-6)"/>
+      <use href="#lf" transform="rotate(-72) scale(.58) translate(0,-6)"/>
+      <path d="M-1,0 L1,0 L1.6,12 L-1.6,12 Z"/>
+    </g>
+  </defs>
+  <g fill="#22C55D" fill-opacity=".08">
+    <use href="#leaf" transform="translate(58,64) rotate(-12) scale(.58)"/>
+    <use href="#leaf" transform="translate(168,44) rotate(34) scale(.46)"/>
+    <use href="#leaf" transform="translate(214,120) rotate(-26) scale(.40)"/>
+    <use href="#leaf" transform="translate(120,140) rotate(12) scale(.52)"/>
+    <use href="#leaf" transform="translate(36,164) rotate(48) scale(.44)"/>
+    <use href="#leaf" transform="translate(184,196) rotate(-42) scale(.50)"/>
+    <use href="#leaf" transform="translate(96,214) rotate(68) scale(.36)"/>
+  </g>
+</svg>

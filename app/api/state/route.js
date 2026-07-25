@@ -21,6 +21,16 @@ const TOKEN = process.env.KV_REST_API_TOKEN;
 const SECRET = process.env.SESSION_SECRET || '';
 const KEY = 'asta2026:state';
 
+// campi a scelta chiusa + valori ammessi; i campi liberi sono in FREE_TEXT
+const ALLOWED = {
+  loc: ['teatro', 'altra'],
+  orari: ['19', '20'],
+  nec: ['si', 'no'],
+  mercato: ['favorevole', 'contrario'],
+};
+const FREE_TEXT = ['necNote', 'locNote'];
+const MAX_TEXT = 300;
+
 const MAX_TRIES = 8;          // tentativi PIN falliti consentiti
 const LOCK_WINDOW = 15 * 60;  // finestra di blocco, in secondi
 const SESSION_DAYS = 30;
@@ -39,14 +49,23 @@ async function redis(cmd) {
 }
 
 function emptyState() {
-  return { loc: {}, orari: {}, nec: {}, necNote: {}, mercato: {}, updated: null };
+  return { loc: {}, locNote: {}, orari: {}, nec: {}, necNote: {}, mercato: {}, updated: null };
+}
+
+// I voti per "cesano" (location non più disponibile) vengono scartati in lettura:
+// chi aveva votato così risulta semplicemente senza voto e può rivotare.
+function normalize(s) {
+  for (const team of Object.keys(s.loc)) {
+    if (!ALLOWED.loc.includes(s.loc[team])) delete s.loc[team];
+  }
+  return s;
 }
 
 async function readState() {
   const out = await redis(['GET', KEY]);
   if (!out.result) return emptyState();
   try {
-    return { ...emptyState(), ...JSON.parse(out.result) };
+    return normalize({ ...emptyState(), ...JSON.parse(out.result) });
   } catch {
     return emptyState();
   }
@@ -217,26 +236,22 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const { field, value } = body || {};
 
-    if (!['loc', 'orari', 'nec', 'necNote', 'mercato'].includes(field)) {
+    if (!Object.keys(ALLOWED).includes(field) && !FREE_TEXT.includes(field)) {
       return json({ error: 'Campo non valido' }, 400);
     }
-    const allowed = {
-      loc: ['teatro', 'cesano'],
-      orari: ['19', '20'],
-      nec: ['si', 'no'],
-      mercato: ['favorevole', 'contrario'],
-    };
-    if (field === 'necNote') {
-      if (typeof value !== 'string' || value.length > 300) {
-        return json({ error: 'Nota non valida (max 300 caratteri).' }, 400);
+    if (FREE_TEXT.includes(field)) {
+      if (typeof value !== 'string' || value.length > MAX_TEXT) {
+        return json({ error: `Testo non valido (max ${MAX_TEXT} caratteri).` }, 400);
       }
-    } else if (value !== null && value !== '' && !allowed[field].includes(value)) {
+    } else if (value !== null && value !== '' && !ALLOWED[field].includes(value)) {
       return json({ error: 'Valore non valido' }, 400);
     }
 
     const state = await readState();
     if (value === null || value === '') delete state[field][team];
     else state[field][team] = value;
+    // chi non vota più "altra" non lascia in giro la propria proposta
+    if (field === 'loc' && value !== 'altra') delete state.locNote[team];
     state.updated = new Date().toISOString();
     await writeState(state);
 

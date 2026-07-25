@@ -4,14 +4,14 @@ import AnimatedSection from './AnimatedSection';
 import { TEAMS } from '../lib/constants';
 import { useAsta } from './AstaProvider';
 
-export default function TimePoll() {
+export default function TimePoll({ index }) {
   const { state, me, push } = useAsta();
 
   const a = TEAMS.filter((t) => state.orari[t] === '19').length;
   const b = TEAMS.filter((t) => state.orari[t] === '20').length;
 
   return (
-    <AnimatedSection>
+    <AnimatedSection index={index}>
       <h2><span className="num">2</span>Sondaggio Orario di Inizio</h2>
       <div className="note bad">
         <strong>Servono tra le 6 e le 7 ore</strong> per completare l’asta. Inizio 19 → fine indicativa

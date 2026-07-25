@@ -5,7 +5,7 @@ import AnimatedSection from './AnimatedSection';
 import { TEAMS } from '../lib/constants';
 import { useAsta } from './AstaProvider';
 
-export default function NeedsTable() {
+export default function NeedsTable({ index }) {
   const { state, me, push } = useAsta();
 
   // Nota della mia squadra: bozza locale + salvataggio con ritardo (debounce),
@@ -26,7 +26,7 @@ export default function NeedsTable() {
   };
 
   return (
-    <AnimatedSection>
+    <AnimatedSection index={index}>
       <h2><span className="num">4</span>Necessità reali di chiudere alle 2</h2>
       <p>
         Segnala qui se la tua squadra ha una <strong>necessità REALE</strong> di chiudere alle 2 e non

@@ -11,7 +11,7 @@ const OPTIONS = [
   { key: 'contrario', title: '👎 Non favorevole', desc: 'Lasciamo le regole di sempre, niente riapertura.' },
 ];
 
-export default function MarketProposal() {
+export default function MarketProposal({ index }) {
   const { state } = useAsta();
   const rows = [
     { key: 'favorevole', label: '👍 Favorevole', voters: TEAMS.filter((t) => state.mercato[t] === 'favorevole') },
@@ -19,7 +19,7 @@ export default function MarketProposal() {
   ];
 
   return (
-    <AnimatedSection>
+    <AnimatedSection index={index}>
       <h2><span className="num">5</span>Proposta: riapertura mercato in sosta nazionali</h2>
       <p>
         Negli anni passati avevamo sempre almeno una settimana tra l’asta e la prima giornata per fare
