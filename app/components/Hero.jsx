@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 const ALT = 'Gli Amici di Maria — Stagione 2026/2027';
 const H1 = 'Asta Fantacalcio 26/27';
 const DATE = 'Giovedì 3 Settembre 2026';
+const SUB = 'Pagina di coordinamento — le risposte sono condivise e visibili a tutti';
 
 /* Header: logo grande a sinistra, blocco testo a destra (in colonna su mobile).
    Animazioni via whileInView (l'header è in vista al caricamento, quindi parte
