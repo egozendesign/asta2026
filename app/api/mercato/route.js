@@ -22,12 +22,14 @@ import {
   configError,
   isAdmin,
   adminPinConfigured,
+  adminPinState,
   adminPinMatches,
   setAdminSession,
   clearAdminSession,
   tooManyTries,
   noteFailure,
   clearFailures,
+  ADMIN_PIN_MIN,
 } from '../../lib/session';
 import {
   LIMITS,
@@ -265,6 +267,7 @@ export async function GET(request) {
       team: currentTeam(request),
       admin: isAdmin(request),
       adminAvailable: adminPinConfigured(),
+      adminStatus: adminPinState(),
       mercato: await readAll(),
     });
   } catch (e) {
@@ -285,8 +288,13 @@ export async function POST(request) {
     // Sta prima del controllo sulla sessione di squadra perche' l'admin non e'
     // una squadra: ha un PIN suo e un cookie suo.
     if (action === 'admin-login') {
-      if (!adminPinConfigured()) {
-        return json({ error: 'Backoffice non configurato: manca ADMIN_PIN.' }, 503);
+      const state = adminPinState();
+      if (state !== 'ok') {
+        return json({
+          error: state === 'short'
+            ? `ADMIN_PIN è impostata ma è troppo corta: servono almeno ${ADMIN_PIN_MIN} caratteri.`
+            : 'Backoffice non configurato: manca ADMIN_PIN.',
+        }, 503);
       }
       if (await tooManyTries(request, 'atry')) {
         return json({ error: 'Troppi tentativi falliti. Riprova tra 15 minuti.' }, 429);

@@ -149,8 +149,19 @@ export function clearSession(res) {
 // firmato, e senza SESSION_SECRET la firma non si rifa'.
 const ADMIN_MARK = '__admin__';
 
+// Tre stati distinti, non due: "manca" e "c'e' ma e' troppo corta" si
+// risolvono in modi diversi, e un messaggio unico manda a cercare il problema
+// nel posto sbagliato (tipicamente: si sospetta che la variabile non venga
+// letta, quando invece il valore c'e' ed e' solo corto).
+export function adminPinState() {
+  const value = String(process.env.ADMIN_PIN || '');
+  if (!value) return 'missing';
+  if (value.length < ADMIN_PIN_MIN) return 'short';
+  return 'ok';
+}
+
 export function adminPinConfigured() {
-  return String(process.env.ADMIN_PIN || '').length >= ADMIN_PIN_MIN;
+  return adminPinState() === 'ok';
 }
 
 export function adminPinMatches(input) {
