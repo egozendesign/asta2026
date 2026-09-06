@@ -409,3 +409,59 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
   background:var(--acc-soft);border:1px solid rgba(34,197,93,.35);
   transition:box-shadow .15s ease}
 .mk-back:hover{box-shadow:0 0 0 3px var(--acc-soft)}
+
+/* =====================================================================
+   Backoffice del mercato (/mercato/admin).
+   Riusa i mattoni del mercato (.mk-tabs, .mk-role, .mk-del) e aggiunge solo
+   la parte tabellare, che nel resto del sito non serviva.
+   ===================================================================== */
+
+.adm-bar{padding:16px 18px}
+.adm-note{font-size:12.5px;color:var(--tert);line-height:1.55;
+  margin:12px 0 0;padding:10px 12px;border-radius:10px;
+  background:rgba(201,222,150,.08);border:1px solid rgba(201,222,150,.22)}
+.adm-note code{font-size:12px;background:var(--surface);border:1px solid var(--line-2);
+  border-radius:5px;padding:1px 5px}
+
+.adm-login{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.adm-login input{flex:1;min-width:180px;max-width:280px}
+.adm-login .flabel{width:100%;margin:0}
+
+.adm-list{display:grid;gap:8px}
+.adm-row{background:var(--glass);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+.adm-row-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.adm-row-main{flex:1;min-width:180px;display:flex;flex-direction:column;gap:1px}
+.adm-team{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--acc)}
+.adm-summary{font-size:14px;color:var(--txt);overflow-wrap:anywhere}
+.adm-row-btns{display:flex;gap:6px;flex-wrap:wrap}
+/* Nel mercato .mk-del sta sempre su azioni distruttive (Ritira, Rimuovi) e
+   diventa rosso al hover. Nel backoffice invece convivono azioni innocue
+   (Modifica) e distruttive (Elimina): il rosso deve restare alle seconde,
+   altrimenti smette di voler dire qualcosa. */
+.adm-btn{background:transparent;border:1px solid var(--line-2);border-radius:9999px;
+  padding:4px 12px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;
+  color:var(--muted);transition:border-color .15s ease,color .15s ease}
+.adm-btn:hover{border-color:rgba(34,197,93,.5);color:var(--acc)}
+.adm-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+
+.adm-confirm{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;overflow:hidden;
+  margin-top:10px;padding:12px;border-radius:10px;
+  background:rgba(242,96,96,.10);border:1px solid rgba(242,96,96,.32);
+  font-size:13.5px;color:var(--txt)}
+
+.adm-edit{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.adm-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media(max-width:600px){.adm-fields{grid-template-columns:1fr}}
+.adm-field .flabel{margin-top:0}
+.adm-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px}
+
+/* link discreto al backoffice: e' protetto da codice, non e' un segreto, ma
+   non deve nemmeno stare in mezzo alla pagina come una voce di menu */
+.adm-link{color:var(--muted);text-decoration:none;font-size:12.5px;
+  border-bottom:1px solid transparent;transition:color .15s ease,border-color .15s ease}
+.adm-link:hover{color:var(--acc);border-bottom-color:rgba(34,197,93,.4)}

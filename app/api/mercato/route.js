@@ -15,7 +15,20 @@
 
 import crypto from 'crypto';
 import { TEAMS } from '../../lib/constants';
-import { redis, currentTeam, json, configError } from '../../lib/session';
+import {
+  redis,
+  currentTeam,
+  json,
+  configError,
+  isAdmin,
+  adminPinConfigured,
+  adminPinMatches,
+  setAdminSession,
+  clearAdminSession,
+  tooManyTries,
+  noteFailure,
+  clearFailures,
+} from '../../lib/session';
 import {
   LIMITS,
   cleanName,
@@ -82,6 +95,150 @@ async function removeOwn(key, id, team) {
   return { error: 'Riga non trovata.', status: 404 };
 }
 
+/* ---------- scrittura del backoffice ---------- */
+
+// Applica una modifica parziale a una riga, validando come se fosse un nuovo
+// inserimento. L'admin puo' correggere anche la squadra (capita che qualcuno
+// invii dal profilo sbagliato), ma non l'id ne' la data: l'id serve a
+// ritrovare la riga, e la data e' l'istante in cui l'evento e' successo, non un
+// campo redazionale — sulle aste e' anche cio' che fa partire le 24 ore.
+// I campi assenti dal patch restano come sono.
+function applyPatch(lista, record, patch) {
+  const out = { ...record };
+  const has = (k) => Object.prototype.hasOwnProperty.call(patch, k);
+
+  if (has('team')) {
+    if (!TEAMS.includes(patch.team)) return { error: 'Squadra non valida.', status: 400 };
+    out.team = patch.team;
+  }
+
+  if (lista === 'svincolati') {
+    if (has('nome')) {
+      const err = validateName(patch.nome);
+      if (err) return { error: err, status: 400 };
+      out.nome = cleanName(patch.nome);
+    }
+    if (has('offerta')) {
+      const offerta = parseOffer(patch.offerta);
+      if (offerta === null) {
+        return { error: `Offerta non valida (da ${LIMITS.offertaMin} a ${LIMITS.offertaMax}).`, status: 400 };
+      }
+      out.offerta = offerta;
+    }
+    return { record: out };
+  }
+
+  if (lista === 'scambi') {
+    if (has('ricevente')) {
+      if (!TEAMS.includes(patch.ricevente)) return { error: 'Squadra ricevente non valida.', status: 400 };
+      out.ricevente = patch.ricevente;
+    }
+    for (const campo of ['giocatoreOfferto', 'giocatoreRichiesto']) {
+      if (!has(campo)) continue;
+      const err = validateName(patch[campo]);
+      if (err) return { error: err, status: 400 };
+      out[campo] = cleanName(patch[campo]);
+    }
+    for (const campo of ['creditiOfferti', 'creditiRichiesti']) {
+      if (!has(campo)) continue;
+      const v = parseCredits(patch[campo]);
+      if (patch[campo] !== '' && patch[campo] !== null && v === null) {
+        return { error: 'Crediti non validi.', status: 400 };
+      }
+      out[campo] = v;
+    }
+    if (out.team === out.ricevente) {
+      return { error: 'Proponente e ricevente non possono essere la stessa squadra.', status: 400 };
+    }
+    return { record: out };
+  }
+
+  // proposti
+  if (has('nome')) {
+    const err = validateName(patch.nome);
+    if (err) return { error: err, status: 400 };
+    out.nome = cleanName(patch.nome);
+  }
+  if (has('ruoli')) {
+    const err = validateRoles(patch.ruoli);
+    if (err) return { error: err, status: 400 };
+    out.ruoli = patch.ruoli;
+  }
+  return { record: out };
+}
+
+
+
+// Modifica una riga per id. Le liste Redis non si indirizzano per id ma per
+// indice, e l'indice puo' spostarsi sotto di noi: se nel frattempo una squadra
+// ritira la propria offerta (LREM) tutte le righe successive scalano di uno, e
+// una LSET fatta sull'indice letto prima riscriverebbe la riga sbagliata.
+// Per questo, appena prima di scrivere, si ricontrolla con LINDEX che a
+// quell'indice ci sia ancora esattamente la riga letta; se non c'e' piu' si
+// rilegge da capo. Tre tentativi, poi si rinuncia invece di scrivere alla cieca.
+async function updateById(key, id, mutate) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const out = await redis(['LRANGE', key, '0', '-1']);
+    const raw = Array.isArray(out.result) ? out.result : [];
+
+    let index = -1;
+    let current = null;
+    for (let i = 0; i < raw.length; i++) {
+      try {
+        if (JSON.parse(raw[i])?.id === id) { index = i; current = raw[i]; break; }
+      } catch { /* riga illeggibile: ignorata */ }
+    }
+    if (index < 0) return { error: 'Riga non trovata.', status: 404 };
+
+    const result = mutate(JSON.parse(current));
+    if (result.error) return result;
+
+    const check = await redis(['LINDEX', key, String(index)]);
+    if (check.result !== current) continue; // la lista e' cambiata: rileggi
+
+    await redis(['LSET', key, String(index), JSON.stringify(result.record)]);
+    return { ok: true, record: result.record };
+  }
+  return { error: 'La lista e\' cambiata durante la modifica. Riprova.', status: 409 };
+}
+
+// Cancellazione senza vincolo di proprieta': solo il backoffice la usa.
+async function removeAny(key, id) {
+  const out = await redis(['LRANGE', key, '0', '-1']);
+  const raw = Array.isArray(out.result) ? out.result : [];
+  for (const line of raw) {
+    let r;
+    try { r = JSON.parse(line); } catch { continue; }
+    if (r?.id !== id) continue;
+    await redis(['LREM', key, '1', line]);
+    return { ok: true };
+  }
+  return { error: 'Riga non trovata.', status: 404 };
+}
+
+// Le aste sono raggruppate per nome del giocatore: correggere un refuso su una
+// sola offerta la staccherebbe dalle altre, creando un'asta parallela con un
+// rilancio solo. Quindi il nuovo nome si propaga a tutte le offerte che stavano
+// nella stessa asta. Ritorna quante righe ha toccato, oltre a quella modificata.
+async function renameAuction(oldKey, newName, skipId) {
+  const out = await redis(['LRANGE', KEYS.svincolati, '0', '-1']);
+  const raw = Array.isArray(out.result) ? out.result : [];
+  let touched = 0;
+
+  for (let i = 0; i < raw.length; i++) {
+    let r;
+    try { r = JSON.parse(raw[i]); } catch { continue; }
+    if (r?.id === skipId || playerKey(r?.nome) !== oldKey) continue;
+
+    const updated = JSON.stringify({ ...r, nome: newName });
+    const check = await redis(['LINDEX', KEYS.svincolati, String(i)]);
+    if (check.result !== raw[i]) continue;
+    await redis(['LSET', KEYS.svincolati, String(i), updated]);
+    touched++;
+  }
+  return touched;
+}
+
 async function readAll() {
   const [svincolati, scambi, proposti] = await Promise.all([
     readList(KEYS.svincolati),
@@ -104,7 +261,12 @@ export async function GET(request) {
   const bad = configError();
   if (bad) return bad;
   try {
-    return json({ team: currentTeam(request), mercato: await readAll() });
+    return json({
+      team: currentTeam(request),
+      admin: isAdmin(request),
+      adminAvailable: adminPinConfigured(),
+      mercato: await readAll(),
+    });
   } catch (e) {
     return json({ error: String(e.message || e) }, 500);
   }
@@ -119,6 +281,68 @@ export async function POST(request) {
   const action = request.nextUrl.searchParams.get('action') || '';
 
   try {
+    /* --- backoffice: accesso --- */
+    // Sta prima del controllo sulla sessione di squadra perche' l'admin non e'
+    // una squadra: ha un PIN suo e un cookie suo.
+    if (action === 'admin-login') {
+      if (!adminPinConfigured()) {
+        return json({ error: 'Backoffice non configurato: manca ADMIN_PIN.' }, 503);
+      }
+      if (await tooManyTries(request, 'atry')) {
+        return json({ error: 'Troppi tentativi falliti. Riprova tra 15 minuti.' }, 429);
+      }
+      const { pin } = (await request.json().catch(() => ({}))) || {};
+      if (!adminPinMatches(pin)) {
+        await noteFailure(request, 'atry');
+        return json({ error: 'Codice non valido.' }, 401);
+      }
+      await clearFailures(request, 'atry');
+      const res = json({ admin: true, mercato: await readAll() });
+      setAdminSession(res);
+      return res;
+    }
+
+    if (action === 'admin-logout') {
+      const res = json({ ok: true });
+      clearAdminSession(res);
+      return res;
+    }
+
+    /* --- backoffice: modifica e cancellazione di qualunque riga --- */
+    if (action === 'admin-edit' || action === 'admin-del') {
+      if (!isAdmin(request)) {
+        return json({ error: 'Sessione del backoffice scaduta. Rientra col codice.' }, 401);
+      }
+      const body = (await request.json().catch(() => ({}))) || {};
+      const key = KEYS[body.lista];
+      if (!key) return json({ error: 'Lista non valida.' }, 400);
+      if (typeof body.id !== 'string' || !body.id) return json({ error: 'Id mancante.' }, 400);
+
+      if (action === 'admin-del') {
+        const res = await removeAny(key, body.id);
+        if (res.error) return json({ error: res.error }, res.status);
+        return json({ admin: true, mercato: await readAll() });
+      }
+
+      let oldPlayerKey = null;
+      let newName = null;
+
+      const res = await updateById(key, body.id, (record) => {
+        const patched = applyPatch(body.lista, record, body.patch || {});
+        if (patched.error) return patched;
+        if (body.lista === 'svincolati' && playerKey(record.nome) !== playerKey(patched.record.nome)) {
+          oldPlayerKey = playerKey(record.nome);
+          newName = patched.record.nome;
+        }
+        return patched;
+      });
+      if (res.error) return json({ error: res.error }, res.status);
+
+      // il nome e' cambiato: porta con se' il resto dell'asta
+      const renamed = oldPlayerKey ? await renameAuction(oldPlayerKey, newName, body.id) : 0;
+      return json({ admin: true, renamed, mercato: await readAll() });
+    }
+
     // L'identità viene dal cookie firmato, mai dal body: non si può offrire a
     // nome di un'altra squadra nemmeno modificando la richiesta a mano.
     const team = currentTeam(request);
