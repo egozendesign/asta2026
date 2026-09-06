@@ -5,8 +5,15 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { TEAMS } from '../lib/constants';
 import { useAsta } from './AstaProvider';
 
-export default function AuthBar() {
-  const { me, status, login, logout } = useAsta();
+/* Barra di login condivisa fra la home e /mercato.
+
+   Il contesto arriva da fuori (prop `ctx`) perché il mercato ha un provider
+   suo: la sessione però è la stessa, stesso cookie e stesso PIN, quindi la
+   barra è una sola invece di due copie da tenere allineate. Senza prop usa il
+   contesto dell'asta, com'era prima. */
+export default function AuthBar({ ctx, hint }) {
+  const asta = useAsta();
+  const { me, status, login, logout } = ctx ?? asta;
   const [team, setTeam] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
@@ -65,9 +72,10 @@ export default function AuthBar() {
       </AnimatePresence>
 
       <div className="hint">
-        {me
-          ? 'Puoi modificare solo la riga della tua squadra. Le altre sono in sola lettura.'
-          : 'Puoi leggere tutto senza PIN. Il PIN serve solo per votare, ed è lo stesso della pagina scambi.'}
+        {hint
+          ?? (me
+            ? 'Puoi modificare solo la riga della tua squadra. Le altre sono in sola lettura.'
+            : 'Puoi leggere tutto senza PIN. Il PIN serve solo per votare, ed è lo stesso della pagina scambi.')}
       </div>
     </div>
   );

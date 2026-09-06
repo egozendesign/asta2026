@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import AstaProvider from './components/AstaProvider';
 import Hero from './components/Hero';
 import AuthBar from './components/AuthBar';
@@ -29,7 +30,12 @@ export default function Page() {
         <RuleForm />
         <MarketProposal n={1} />
         <RuleList startAt={2} />
-        <footer>Le risposte si aggiornano automaticamente ogni 10 secondi · Asta 3 settembre 2026</footer>
+        <footer>
+          Le risposte si aggiornano automaticamente ogni 10 secondi · Asta 3 settembre 2026
+          <div style={{ marginTop: 14 }}>
+            <Link href="/mercato" className="mk-back">Vai al mercato · scambi, svincolati, proposti →</Link>
+          </div>
+        </footer>
       </div>
     </AstaProvider>
   );

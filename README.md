@@ -7,11 +7,16 @@ Framer Motion, dati su Upstash Redis, login con PIN per squadra.
 asta/
 ├── app/
 │   ├── layout.jsx            # layout, font Inter, metadati
-│   ├── page.jsx              # la pagina (compone i componenti)
+│   ├── page.jsx              # home dell'asta (compone i componenti)
+│   ├── mercato/page.jsx      # /mercato — scambi, svincolati, proposti
 │   ├── globals.css           # design system (scuro/vetro/verde) + Tailwind
 │   ├── components/           # Hero, AuthBar, sezioni, voti, barre
+│   │   └── mercato/          # provider, tab, form e liste del mercato
 │   ├── lib/constants.js      # elenco squadre (client + server)
-│   └── api/state/route.js    # API: login, lettura pubblica, scrittura autenticata
+│   ├── lib/session.js        # sessione, Redis e rate limiting (condivisi)
+│   ├── lib/mercato.js        # costanti, validazione e derivazione delle aste
+│   ├── api/state/route.js    # API asta: login, lettura pubblica, scrittura
+│   └── api/mercato/route.js  # API mercato: offerte, scambi, proposte
 ├── public/logo.png           # logo statico
 ├── setup-env.cjs             # genera le env var (da eseguire in locale)
 ├── tailwind.config.mjs · postcss.config.mjs · next.config.mjs
@@ -69,17 +74,69 @@ Ti chiede i 10 PIN e stampa due valori: `TEAM_PINS` e `SESSION_SECRET`.
 - Rate limiting: 8 tentativi falliti per IP, poi blocco di 15 minuti.
 - La pagina si aggiorna dal server ogni 10 secondi e quando torna in primo piano.
 
+## Il mercato (`/mercato`)
+
+Porting della vecchia app statica `new-mercato`, che girava su Airtable. Tre
+sezioni:
+
+- **Svincolati** — aste al rialzo. La prima offerta su un giocatore apre l'asta
+  e fa partire 24 ore; dopo la scadenza il giocatore è aggiudicato a chi ha
+  offerto di più (a parità di importo vince chi ha offerto per primo).
+- **Scambi** — proposte di scambio fra due squadre, con crediti facoltativi da
+  una parte o dall'altra. Restano in bacheca 24 ore.
+- **Proposti** — giocatori messi a disposizione, con i ruoli cercati in cambio.
+
+Il login è **lo stesso dell'asta**: stesso PIN, stesso cookie. Chi è già entrato
+sulla home può offrire senza rifare l'accesso.
+
+### Perché Redis basta
+
+Il mercato è **append-only**: un'asta non è una riga che si aggiorna, è la somma
+delle offerte ricevute per quel giocatore, ricostruita a ogni lettura da
+`deriveAuctions()`. Le offerte si accodano con `RPUSH`, che è atomico, quindi due
+rilanci simultanei si accodano entrambi e nessuno si perde — senza lock e senza
+scrittura ottimistica.
+
+Chiavi Redis usate (liste):
+
+```
+asta2026:mercato:svincolati
+asta2026:mercato:scambi
+asta2026:mercato:proposti
+```
+
+Ogni lista è limitata alle 500 righe più recenti (`LTRIM`).
+
+### Cosa è cambiato rispetto a new-mercato
+
+| new-mercato | qui |
+|---|---|
+| Token Airtable di scrittura in chiaro in `config.js` | nessun segreto nel client, si parla solo con `/api/mercato` |
+| Password squadra in chiaro nel client | sessione PIN esistente, verificata lato server |
+| La squadra si sceglieva da una tendina | la squadra è quella del cookie firmato: non si offre a nome di altri |
+| Si poteva offrire su un'asta già scaduta | rifiutato con 409 |
+| Si poteva offrire meno dell'offerta in testa | rifiutato con 409 |
+| Si potevano scegliere due volte lo stesso ruolo | selezione a chip, il doppione non è rappresentabile |
+| Rate limiting client-side per la quota Airtable | cooldown di 3s per squadra lato server |
+
 ## Reset dei dati
 
-I dati stanno nella chiave Redis `asta2026:state`. Per azzerare, dalla console
-Upstash: `DEL asta2026:state`.
+I voti dell'asta stanno nella chiave `asta2026:state`, il mercato nelle tre
+liste `asta2026:mercato:*`. Per azzerare, dalla console Upstash:
+
+```
+DEL asta2026:state
+DEL asta2026:mercato:svincolati
+DEL asta2026:mercato:scambi
+DEL asta2026:mercato:proposti
+```
 
 ## Limiti da tenere presenti
 
 - **10 PIN a 4 cifre sono deboli.** Il rate limiting è per IP, quindi un
   attaccante con IP variabili può aggirarlo. Per un gruppo di amici va bene;
   non è una protezione seria.
-- Stai riusando i PIN della pagina scambi: chi indovina un PIN qui lo ha
-  anche là. Valuta PIN diversi per le due pagine.
+- Asta e mercato condividono la stessa sessione: chi indovina un PIN entra in
+  entrambe le sezioni.
 - Chi conosce il PIN di una squadra può votare al posto suo. Non c'è modo di
   distinguere i due componenti di una squadra in coppia.

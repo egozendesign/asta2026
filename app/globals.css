@@ -243,3 +243,151 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
   *{animation-duration:.001ms !important;animation-iteration-count:1 !important;
     transition-duration:.001ms !important;scroll-behavior:auto !important}
 }
+
+/* =====================================================================
+   Mercato (/mercato) — scambi, svincolati, proposti.
+
+   Portato da new-mercato, che usava Tailwind da CDN con la sua palette
+   (bg-gray-800, text-green-400…). Qui i colori arrivano tutti dalle variabili
+   di :root, così le due pagine sono la stessa app e non due temi affiancati.
+   ===================================================================== */
+
+/* ---------- tab ---------- */
+.mk-tabs{display:flex;gap:6px;margin-bottom:16px;padding:6px;
+  background:var(--glass-2);border:1px solid var(--line);border-radius:14px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+.mk-tab{position:relative;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:transparent;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;
+  color:var(--muted);font-family:inherit;font-size:14px;font-weight:600;
+  transition:color .15s ease}
+.mk-tab:hover{color:var(--txt)}
+.mk-tab.on{color:var(--acc)}
+.mk-tab span,.mk-tab b{position:relative;z-index:1}
+.mk-tab b{font-size:11px;font-weight:700;padding:1px 7px;border-radius:9999px;
+  background:var(--surface);border:1px solid var(--line-2);color:var(--muted)}
+.mk-tab.on b{background:var(--acc-soft);border-color:rgba(34,197,93,.35);color:var(--acc)}
+/* l'indicatore è sotto al testo: è un layoutId di Framer Motion, scorre da solo */
+.mk-tab-ink{position:absolute;inset:0;z-index:0;border-radius:10px;
+  background:var(--acc-soft);border:1px solid rgba(34,197,93,.35)}
+@media(max-width:600px){
+  .mk-tab{flex-direction:column;gap:3px;padding:9px 6px;font-size:13px}
+}
+
+/* ---------- impianto a due colonne ---------- */
+.mk-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+@media(max-width:860px){.mk-grid{grid-template-columns:1fr}}
+.mk-aside{position:sticky;top:76px}
+@media(max-width:860px){.mk-aside{position:static}}
+.mk-panel{position:relative;background:var(--glass);
+  border:1px solid var(--line);border-radius:16px;padding:20px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+.mk-panel .ptitle{margin-bottom:2px}
+
+/* ---------- form ---------- */
+.mk-form .flabel:first-of-type{margin-top:10px}
+.mk-submit{width:100%;margin-top:18px;padding:11px 18px;font-size:14px}
+.mk-locked{color:var(--muted);font-size:13.5px;line-height:1.55;margin:12px 0 2px}
+
+.mk-role-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+
+/* ---------- chip dei ruoli ---------- */
+.mk-role{--role:var(--muted);
+  display:inline-flex;align-items:center;justify-content:center;min-width:32px;
+  padding:3px 9px;border-radius:9999px;font-size:12px;font-weight:700;letter-spacing:.02em;
+  color:var(--role);background:color-mix(in srgb,var(--role) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--role) 38%,transparent)}
+.mk-role.pick{cursor:pointer;font-family:inherit;opacity:.5;
+  transition:opacity .15s ease,box-shadow .15s ease}
+.mk-role.pick:hover:not(:disabled){opacity:.85}
+.mk-role.pick.on{opacity:1;box-shadow:0 0 0 3px color-mix(in srgb,var(--role) 18%,transparent)}
+.mk-role.pick:disabled{cursor:not-allowed;opacity:.22}
+
+/* ---------- card ---------- */
+.mk-list{display:grid;gap:10px}
+.mk-card{position:relative;background:var(--glass);border:1px solid var(--line);
+  border-left:2px solid var(--line-2);border-radius:14px;padding:16px 18px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+.mk-card.mine{border-left-color:var(--acc);background:var(--acc-soft)}
+.mk-card.closed{opacity:.62}
+.mk-empty{color:var(--muted);text-align:center;padding:38px 20px;
+  background:var(--glass-2);border:1px dashed var(--line-2);border-radius:14px;margin:0}
+
+.mk-card-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.mk-card-title{flex:1;min-width:150px}
+.mk-card-title h3{margin:0;font-size:16px;font-weight:600;color:#fff;letter-spacing:-.01em}
+.mk-sub{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.mk-label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted)}
+
+.mk-card-figure{text-align:right}
+.mk-amount{display:block;font-size:24px;font-weight:700;color:var(--acc);
+  letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.mk-amount i{font-size:11px;font-style:normal;font-weight:600;margin-left:3px;opacity:.7}
+.mk-leader{font-size:12.5px;color:var(--muted);font-weight:500}
+.mk-leader.me{color:var(--acc);font-weight:600}
+
+.mk-card-state{min-width:104px;text-align:right}
+.mk-timer{font-size:19px;font-weight:600;color:var(--txt);
+  font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.mk-badge{display:inline-block;padding:5px 12px;border-radius:9999px;
+  font-size:12px;font-weight:600}
+.mk-badge.done{background:var(--acc-soft);border:1px solid rgba(34,197,93,.35);color:var(--acc)}
+
+.mk-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+
+/* ---------- rilanci ---------- */
+.mk-toggle{margin-top:12px;background:transparent;border:0;padding:0;cursor:pointer;
+  font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);
+  transition:color .15s ease}
+.mk-toggle:hover{color:var(--acc)}
+.mk-bids{list-style:none;margin:0;padding:0;overflow:hidden}
+.mk-bids li{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.mk-bids li:last-child{border-bottom:0;padding-bottom:0}
+.mk-bids li:first-child{margin-top:8px}
+.mk-bid-team{flex:1;min-width:110px;color:var(--txt);font-weight:500}
+.mk-bid-offer{color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+.mk-bids li.top .mk-bid-offer{color:var(--acc)}
+.mk-bid-date{font-size:11.5px;color:var(--muted);opacity:.75}
+
+/* ---------- scambi ---------- */
+.mk-trade{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mk-side{flex:1;min-width:130px;text-align:center}
+.mk-team{display:block;font-weight:600;color:#fff;font-size:14px}
+.mk-player{display:block;font-size:13.5px;color:var(--txt);margin-top:2px;overflow-wrap:anywhere}
+.mk-credits{display:inline-block;margin-top:4px;font-size:12px;font-weight:600}
+.mk-credits.plus{color:var(--acc)}
+.mk-credits.minus{color:var(--danger)}
+.mk-swap{color:var(--tert);font-size:20px;flex:none;opacity:.8}
+@media(max-width:600px){
+  .mk-trade{flex-direction:column;align-items:stretch;gap:8px}
+  .mk-swap{transform:rotate(90deg);text-align:center}
+  .mk-card-state{text-align:center}
+}
+
+/* ---------- proposti ---------- */
+.mk-players{list-style:none;margin:12px 0 0;padding:0}
+.mk-players li{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:9px 0;border-bottom:1px solid var(--line)}
+.mk-players li:last-child{border-bottom:0;padding-bottom:0}
+.mk-player-main{flex:1;min-width:140px}
+.mk-roles{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.mk-roles .mk-label{display:inline;margin-right:2px}
+
+/* ---------- azioni distruttive ---------- */
+.mk-del{background:transparent;border:1px solid var(--line-2);border-radius:9999px;
+  padding:4px 12px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;
+  color:var(--muted);transition:border-color .15s ease,color .15s ease}
+.mk-del:hover{border-color:var(--danger);color:var(--danger)}
+
+/* ---------- link di ritorno ---------- */
+.mk-back{display:inline-flex;align-items:center;gap:6px;
+  color:var(--acc);text-decoration:none;font-size:13.5px;font-weight:600;
+  padding:6px 14px;border-radius:9999px;
+  background:var(--acc-soft);border:1px solid rgba(34,197,93,.35);
+  transition:box-shadow .15s ease}
+.mk-back:hover{box-shadow:0 0 0 3px var(--acc-soft)}
