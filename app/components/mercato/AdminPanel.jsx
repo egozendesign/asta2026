@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { TEAMS } from '../../lib/constants';
 import { ROLES, ROLE_COLORS, LIMITS, formatDate, deriveAuctions } from '../../lib/mercato';
+
+// stessa soglia del server (app/lib/session.js): qui serve solo per il testo
+const ADMIN_PIN_MIN = 6;
 import { useMercato } from './MercatoProvider';
 
 /* Backoffice del mercato: modifica e cancellazione di qualunque riga.
@@ -53,7 +56,7 @@ function summary(lista, r) {
 /* ---------- login ---------- */
 
 function AdminLogin() {
-  const { adminLogin, adminAvailable, status } = useMercato();
+  const { adminLogin, adminAvailable, adminStatus, status } = useMercato();
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -66,12 +69,29 @@ function AdminLogin() {
   };
 
   if (!adminAvailable) {
+    // Due cause diverse, due rimedi diversi: dirlo evita di andare a cercare il
+    // problema nelle impostazioni di Vercel quando il valore c'e' ed e' corto.
+    const corta = adminStatus === 'short';
     return (
       <section>
-        <h2 className="ptitle">Backoffice non configurato</h2>
+        <h2 className="ptitle">{corta ? 'Codice admin troppo corto' : 'Backoffice non configurato'}</h2>
         <p className="adm-note">
-          Manca la variabile d’ambiente <code>ADMIN_PIN</code>. Finché non è impostata su Vercel
-          (almeno 6 caratteri) il pannello resta chiuso a chiunque, compreso te.
+          {corta ? (
+            <>
+              La variabile <code>ADMIN_PIN</code> c’è e viene letta, ma il valore è più corto di{' '}
+              {ADMIN_PIN_MIN} caratteri. Da qui si cancellano i dati di tutte le squadre, quindi un
+              codice di 4 cifre non basta: mettine uno più lungo e rifai il deploy.
+            </>
+          ) : (
+            <>
+              Manca la variabile d’ambiente <code>ADMIN_PIN</code>. Finché non è impostata su Vercel
+              (almeno {ADMIN_PIN_MIN} caratteri) il pannello resta chiuso a chiunque, compreso te.
+            </>
+          )}
+        </p>
+        <p className="hint">
+          Ricorda di rifare il deploy dopo averla cambiata: le variabili non entrano in un deploy
+          già costruito.
         </p>
       </section>
     );

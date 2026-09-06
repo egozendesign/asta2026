@@ -27,6 +27,8 @@ export default function MercatoProvider({ children }) {
   // configurato: senza, il pannello non ha senso e non va nemmeno proposto.
   const [admin, setAdmin] = useState(false);
   const [adminAvailable, setAdminAvailable] = useState(false);
+  // 'ok' | 'missing' | 'short': serve a dire *perche'* il pannello e' chiuso
+  const [adminStatus, setAdminStatus] = useState('missing');
   const [status, setStatus] = useState({ msg: 'caricamento…', cls: 'wait' });
 
   const meRef = useRef(null);
@@ -40,6 +42,7 @@ export default function MercatoProvider({ children }) {
       setMe(d.team || null);
       setAdmin(Boolean(d.admin));
       setAdminAvailable(Boolean(d.adminAvailable));
+      setAdminStatus(d.adminStatus || 'missing');
       setMercato(d.mercato || EMPTY);
       setStatus({ msg: 'aggiornato', cls: 'ok' });
     } catch (e) {
@@ -187,7 +190,7 @@ export default function MercatoProvider({ children }) {
       value={{
         mercato, me, status, login, logout,
         offri, proponiScambio, proponiGiocatore, cancella,
-        admin, adminAvailable, adminLogin, adminLogout, adminEdit, adminDel,
+        admin, adminAvailable, adminStatus, adminLogin, adminLogout, adminEdit, adminDel,
       }}
     >
       {children}
