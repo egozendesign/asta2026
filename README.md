@@ -9,9 +9,11 @@ asta/
 │   ├── layout.jsx            # layout, font Inter, metadati
 │   ├── page.jsx              # home dell'asta (compone i componenti)
 │   ├── mercato/page.jsx      # /mercato — scambi, svincolati, proposti
+│   ├── mercato/admin/page.jsx # /mercato/admin — backoffice
 │   ├── globals.css           # design system (scuro/vetro/verde) + Tailwind
 │   ├── components/           # Hero, AuthBar, sezioni, voti, barre
-│   │   └── mercato/          # provider, tab, form e liste del mercato
+│   │   ├── Nav.jsx           # barra di menu fra asta e mercato
+│   │   └── mercato/          # provider, tab, form, liste e backoffice
 │   ├── lib/constants.js      # elenco squadre (client + server)
 │   ├── lib/session.js        # sessione, Redis e rate limiting (condivisi)
 │   ├── lib/mercato.js        # costanti, validazione e derivazione delle aste
@@ -42,7 +44,8 @@ In locale, nella cartella del progetto:
 node setup-env.cjs
 ```
 
-Ti chiede i 10 PIN e stampa due valori: `TEAM_PINS` e `SESSION_SECRET`.
+Ti chiede i 10 PIN e stampa tre valori: `TEAM_PINS`, `SESSION_SECRET` e
+`ADMIN_PIN` (quest'ultimo generato a caso, serve per il backoffice — vedi sotto).
 **Non salvare l'output in un file dentro il repo.**
 
 ## 2. Deploy su Vercel
@@ -56,8 +59,9 @@ Ti chiede i 10 PIN e stampa due valori: `TEAM_PINS` e `SESSION_SECRET`.
    Se i nomi hanno un prefisso diverso (es. `UPSTASH_REDIS_REST_URL`),
    aggiungi a mano due variabili con i nomi attesi.
 
-3. `Settings` → `Environment Variables`: aggiungi `TEAM_PINS` e
-   `SESSION_SECRET` dal passo 1. Marcale come **Sensitive**.
+3. `Settings` → `Environment Variables`: aggiungi `TEAM_PINS`,
+   `SESSION_SECRET` e (se vuoi il backoffice) `ADMIN_PIN` dal passo 1.
+   Marcale come **Sensitive**.
 
 4. **Rifai il deploy.** Le env var non entrano in un deploy già esistente.
 
@@ -119,6 +123,54 @@ Ogni lista è limitata alle 500 righe più recenti (`LTRIM`).
 | Si potevano scegliere due volte lo stesso ruolo | selezione a chip, il doppione non è rappresentabile |
 | Rate limiting client-side per la quota Airtable | cooldown di 3s per squadra lato server |
 
+## Backoffice (`/mercato/admin`)
+
+Pannello per correggere e cancellare le righe inserite dalle squadre: offerte,
+scambi e giocatori proposti. Serve quando qualcuno sbaglia a scrivere un nome,
+invia dal profilo sbagliato o inserisce una riga per errore.
+
+L'accesso **non** usa i PIN di gioco: c'è una variabile d'ambiente dedicata,
+`ADMIN_PIN` (almeno 6 caratteri), e una sessione con un cookie suo che dura
+**1 giorno** invece di 30. Chi conosce il PIN di una squadra non entra nel
+backoffice, e chi entra nel backoffice non diventa una squadra. Se `ADMIN_PIN`
+non è impostata il pannello resta chiuso a chiunque e lo dice.
+
+Cosa si può modificare, per lista:
+
+| Lista | Campi modificabili |
+|---|---|
+| Svincolati | squadra, giocatore, offerta |
+| Scambi | proponente, ricevente, i due giocatori, i due importi in crediti |
+| Proposti | squadra, giocatore, ruoli cercati |
+
+`id` e `data` non sono modificabili: l'id serve a ritrovare la riga, e la data è
+l'istante in cui l'evento è successo — sulle aste è anche ciò che fa partire le
+24 ore, quindi cambiarla a mano sposterebbe una scadenza già comunicata a tutti.
+
+### Rinominare un giocatore rinomina tutta l'asta
+
+Le aste sono raggruppate per nome del giocatore. Correggendo un refuso su una
+sola offerta, quella si staccherebbe dalle altre e diventerebbe un'asta
+parallela con un rilancio solo. Perciò il nuovo nome viene applicato a **tutte**
+le offerte che stavano nella stessa asta, e il pannello dice quante righe ha
+toccato.
+
+### Nota sulla concorrenza
+
+Le liste Redis si indirizzano per indice, non per id, e l'indice può spostarsi:
+se mentre stai modificando una squadra ritira la propria offerta (`LREM`), tutte
+le righe successive scalano di uno. Prima di scrivere, quindi, si ricontrolla
+con `LINDEX` che a quell'indice ci sia ancora esattamente la riga letta; se non
+c'è più si rilegge da capo, fino a tre tentativi, poi si risponde 409 invece di
+scrivere sulla riga sbagliata.
+
+### Limiti
+
+- **Non c'è cronologia.** Le modifiche sono immediate e quello che cancelli è
+  perso: non esiste un annulla né un registro di chi ha cambiato cosa.
+- Il backoffice è uno solo: se in due entrate insieme con lo stesso codice,
+  l'ultimo che salva vince.
+
 ## Reset dei dati
 
 I voti dell'asta stanno nella chiave `asta2026:state`, il mercato nelle tre
@@ -137,6 +189,6 @@ DEL asta2026:mercato:proposti
   attaccante con IP variabili può aggirarlo. Per un gruppo di amici va bene;
   non è una protezione seria.
 - Asta e mercato condividono la stessa sessione: chi indovina un PIN entra in
-  entrambe le sezioni.
+  entrambe le sezioni. Il backoffice no: ha `ADMIN_PIN` a parte.
 - Chi conosce il PIN di una squadra può votare al posto suo. Non c'è modo di
   distinguere i due componenti di una squadra in coppia.

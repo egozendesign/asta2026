@@ -48,6 +48,14 @@ const ask = (q) => new Promise((res) => rl.question(q, res));
   console.log('Valore: ' + JSON.stringify(pins) + '\n');
   console.log('Nome:   SESSION_SECRET');
   console.log('Valore: ' + crypto.randomBytes(32).toString('hex') + '\n');
+
+  // Il backoffice puo' riscrivere e cancellare i dati di tutti, quindi il suo
+  // codice non e' un PIN a 4 cifre come quelli di gioco: e' generato lungo e a
+  // caso. Senza questa variabile /mercato/admin resta chiuso a chiunque.
+  console.log('Nome:   ADMIN_PIN        (backoffice /mercato/admin)');
+  console.log('Valore: ' + crypto.randomBytes(12).toString('base64url') + '\n');
+
   console.log('='.repeat(70));
-  console.log('Marca entrambe come "Sensitive". Poi rifai il deploy.');
+  console.log('Marcale tutte e tre come "Sensitive". Poi rifai il deploy.');
+  console.log('ADMIN_PIN e\' facoltativa: se la ometti, il backoffice resta chiuso.');
 })();

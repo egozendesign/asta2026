@@ -11,6 +11,8 @@
 //   KV_REST_API_TOKEN   (dall'integrazione Upstash Redis)
 //   TEAM_PINS           JSON: {"Pandamonio":"1234", ...}
 //   SESSION_SECRET      stringa random lunga (>= 32 caratteri)
+//   ADMIN_PIN           (facoltativa) codice del backoffice /mercato/admin.
+//                       Se manca, il pannello resta chiuso a chiunque.
 
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
@@ -21,9 +23,14 @@ const TOKEN = process.env.KV_REST_API_TOKEN;
 const SECRET = process.env.SESSION_SECRET || '';
 
 export const COOKIE = 'asta_sess';
+export const ADMIN_COOKIE = 'asta_admin';
 export const MAX_TRIES = 8;          // tentativi PIN falliti consentiti
 export const LOCK_WINDOW = 15 * 60;  // finestra di blocco, in secondi
 export const SESSION_DAYS = 30;
+// L'admin puo' riscrivere i dati di tutti: la sua sessione dura molto meno di
+// quella di gioco, cosi' un dispositivo lasciato aperto non resta admin per un mese.
+export const ADMIN_DAYS = 1;
+export const ADMIN_PIN_MIN = 6;
 
 /* ---------- storage ---------- */
 
@@ -69,19 +76,21 @@ export function clientKey(request) {
     .slice(0, 16);
 }
 
-export async function tooManyTries(request) {
-  const out = await redis(['GET', `asta2026:try:${clientKey(request)}`]);
+// `prefix` separa i contatori: i tentativi falliti sul PIN admin non devono
+// bloccare il login di una squadra dietro lo stesso IP, e viceversa.
+export async function tooManyTries(request, prefix = 'try') {
+  const out = await redis(['GET', `asta2026:${prefix}:${clientKey(request)}`]);
   return Number(out.result || 0) >= MAX_TRIES;
 }
 
-export async function noteFailure(request) {
-  const k = `asta2026:try:${clientKey(request)}`;
+export async function noteFailure(request, prefix = 'try') {
+  const k = `asta2026:${prefix}:${clientKey(request)}`;
   await redis(['INCR', k]);
   await redis(['EXPIRE', k, String(LOCK_WINDOW)]);
 }
 
-export async function clearFailures(request) {
-  await redis(['DEL', `asta2026:try:${clientKey(request)}`]);
+export async function clearFailures(request, prefix = 'try') {
+  await redis(['DEL', `asta2026:${prefix}:${clientKey(request)}`]);
 }
 
 /* ---------- sessione (cookie firmato HMAC) ---------- */
@@ -92,7 +101,9 @@ function sign(team, exp) {
   return `${payload}.${mac}`;
 }
 
-export function verify(cookieValue) {
+// Verifica firma e scadenza e restituisce il valore firmato, senza dire cosa
+// significhi: a stabilirlo sono verify() e verifyAdmin() qui sotto.
+function unsign(cookieValue) {
   if (!cookieValue || !SECRET) return null;
   const parts = cookieValue.split('.');
   if (parts.length !== 3) return null;
@@ -105,8 +116,12 @@ export function verify(cookieValue) {
   const B = Buffer.from(expected);
   if (A.length !== B.length || !crypto.timingSafeEqual(A, B)) return null;
   if (Number(exp) < Date.now()) return null;
-  const team = Buffer.from(b64, 'base64url').toString();
-  return TEAMS.includes(team) ? team : null;
+  return Buffer.from(b64, 'base64url').toString();
+}
+
+export function verify(cookieValue) {
+  const value = unsign(cookieValue);
+  return value && TEAMS.includes(value) ? value : null;
 }
 
 // La squadra loggata, o null. Unico punto da cui le route leggono l'identità.
@@ -125,6 +140,41 @@ export function setSession(res, team) {
 
 export function clearSession(res) {
   res.cookies.set(COOKIE, '', cookieOptions(0));
+}
+
+/* ---------- sessione admin ---------- */
+
+// Il payload firmato dell'admin non e' un nome di squadra, quindi un cookie di
+// gioco non puo' valere come cookie di backoffice: cambierebbe il valore
+// firmato, e senza SESSION_SECRET la firma non si rifa'.
+const ADMIN_MARK = '__admin__';
+
+export function adminPinConfigured() {
+  return String(process.env.ADMIN_PIN || '').length >= ADMIN_PIN_MIN;
+}
+
+export function adminPinMatches(input) {
+  const expected = String(process.env.ADMIN_PIN || '');
+  if (expected.length < ADMIN_PIN_MIN) return false;
+  return pinMatches(String(input ?? ''), expected);
+}
+
+export function verifyAdmin(cookieValue) {
+  return unsign(cookieValue) === ADMIN_MARK;
+}
+
+// True se la richiesta arriva da un backoffice autenticato.
+export function isAdmin(request) {
+  return verifyAdmin(request.cookies.get(ADMIN_COOKIE)?.value);
+}
+
+export function setAdminSession(res) {
+  const exp = Date.now() + ADMIN_DAYS * 86400 * 1000;
+  res.cookies.set(ADMIN_COOKIE, sign(ADMIN_MARK, exp), cookieOptions(ADMIN_DAYS * 86400));
+}
+
+export function clearAdminSession(res) {
+  res.cookies.set(ADMIN_COOKIE, '', cookieOptions(0));
 }
 
 /* ---------- risposte ---------- */

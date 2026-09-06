@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import MercatoProvider, { useMercato } from '../components/mercato/MercatoProvider';
 import MercatoHero from '../components/mercato/MercatoHero';
 import MercatoTabs from '../components/mercato/MercatoTabs';
@@ -28,7 +29,12 @@ export default function MercatoPage() {
         <MercatoHero />
         <Bar />
         <MercatoTabs />
-        <footer>Il mercato si aggiorna automaticamente ogni 15 secondi</footer>
+        <footer>
+          Il mercato si aggiorna automaticamente ogni 15 secondi
+          <div style={{ marginTop: 10 }}>
+            <Link href="/mercato/admin" className="adm-link">Backoffice</Link>
+          </div>
+        </footer>
       </div>
     </MercatoProvider>
   );

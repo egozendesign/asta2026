@@ -22,6 +22,11 @@ const POLL_MS = 15000;
 export default function MercatoProvider({ children }) {
   const [mercato, setMercato] = useState(EMPTY);
   const [me, setMe] = useState(null);
+  // `admin` e' il backoffice autenticato: sessione separata da quella di
+  // squadra, con un cookie suo. `adminAvailable` dice se ADMIN_PIN e' stato
+  // configurato: senza, il pannello non ha senso e non va nemmeno proposto.
+  const [admin, setAdmin] = useState(false);
+  const [adminAvailable, setAdminAvailable] = useState(false);
   const [status, setStatus] = useState({ msg: 'caricamento…', cls: 'wait' });
 
   const meRef = useRef(null);
@@ -33,6 +38,8 @@ export default function MercatoProvider({ children }) {
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       setMe(d.team || null);
+      setAdmin(Boolean(d.admin));
+      setAdminAvailable(Boolean(d.adminAvailable));
       setMercato(d.mercato || EMPTY);
       setStatus({ msg: 'aggiornato', cls: 'ok' });
     } catch (e) {
@@ -74,6 +81,70 @@ export default function MercatoProvider({ children }) {
   const proponiGiocatore = useCallback((nome, ruoli) => send('proposta', { nome, ruoli }), [send]);
   const cancella = useCallback((lista, id) => send('del', { lista, id }), [send]);
 
+  /* --- backoffice --- */
+
+  const adminSend = useCallback(async (action, payload) => {
+    setStatus({ msg: 'salvo…', cls: 'wait' });
+    try {
+      const r = await fetch(`/api/mercato?action=${action}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (d.error) {
+        if (r.status === 401) setAdmin(false);
+        throw new Error(d.error);
+      }
+      if (d.mercato) setMercato(d.mercato);
+      // renamed = quante ALTRE offerte della stessa asta hanno seguito il
+      // cambio di nome. Vale la pena dirlo: e' una scrittura che l'admin non
+      // ha chiesto riga per riga.
+      setStatus({
+        msg: d.renamed ? `salvato ✓ (${d.renamed} rilanci rinominati)` : 'salvato ✓',
+        cls: 'ok',
+      });
+      return true;
+    } catch (e) {
+      setStatus({ msg: e.message, cls: 'err' });
+      return false;
+    }
+  }, []);
+
+  const adminLogin = useCallback(async (pin) => {
+    setStatus({ msg: 'verifico…', cls: 'wait' });
+    try {
+      const r = await fetch('/api/mercato?action=admin-login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      setAdmin(true);
+      if (d.mercato) setMercato(d.mercato);
+      setStatus({ msg: 'backoffice aperto ✓', cls: 'ok' });
+      return true;
+    } catch (e) {
+      setStatus({ msg: e.message, cls: 'err' });
+      return false;
+    }
+  }, []);
+
+  const adminLogout = useCallback(async () => {
+    await fetch('/api/mercato?action=admin-logout', { method: 'POST', credentials: 'same-origin' });
+    setAdmin(false);
+    setStatus({ msg: 'uscito dal backoffice', cls: 'wait' });
+  }, []);
+
+  const adminEdit = useCallback(
+    (lista, id, patch) => adminSend('admin-edit', { lista, id, patch }),
+    [adminSend]
+  );
+  const adminDel = useCallback((lista, id) => adminSend('admin-del', { lista, id }), [adminSend]);
+
   const login = useCallback(async (team, pin) => {
     if (!team) { setStatus({ msg: 'Seleziona la squadra', cls: 'err' }); return false; }
     if (!/^\d{4}$/.test(pin)) { setStatus({ msg: 'PIN: 4 cifre', cls: 'err' }); return false; }
@@ -113,7 +184,11 @@ export default function MercatoProvider({ children }) {
 
   return (
     <MercatoCtx.Provider
-      value={{ mercato, me, status, login, logout, offri, proponiScambio, proponiGiocatore, cancella }}
+      value={{
+        mercato, me, status, login, logout,
+        offri, proponiScambio, proponiGiocatore, cancella,
+        admin, adminAvailable, adminLogin, adminLogout, adminEdit, adminDel,
+      }}
     >
       {children}
     </MercatoCtx.Provider>
