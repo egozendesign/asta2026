@@ -100,6 +100,24 @@ h2 .num{background:var(--acc);color:#050806;min-width:28px;height:28px;padding:0
 .note.info{border-left-color:var(--acc);background:var(--acc-soft)}
 .note.bad{border-left-color:var(--danger);background:rgba(239,68,68,.10)}
 
+/* ---------- barra di menu (dentro #authbar) ---------- */
+.nav{display:flex;gap:4px;margin:-2px 0 12px;padding-bottom:12px;
+  border-bottom:1px solid var(--line)}
+.nav-link{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  padding:7px 16px;border-radius:9999px;text-decoration:none;
+  color:var(--muted);font-size:13.5px;font-weight:600;letter-spacing:-.005em;
+  transition:color .15s ease}
+.nav-link:hover{color:var(--txt)}
+.nav-link.on{color:var(--acc)}
+.nav-link span{position:relative;z-index:1}
+/* l'indicatore sta sotto al testo: e' un layoutId di Framer Motion, si sposta da solo */
+.nav-ink{position:absolute;inset:0;z-index:0;border-radius:9999px;
+  background:var(--acc-soft);border:1px solid rgba(34,197,93,.35)}
+@media(max-width:600px){
+  .nav{gap:2px}
+  .nav-link{flex:1;padding:8px 10px;font-size:14px}
+}
+
 /* ---------- auth bar ---------- */
 #authbar{position:sticky;top:10px;z-index:30;margin-bottom:16px;
   background:var(--glass-2);border:1px solid var(--line);border-radius:16px;

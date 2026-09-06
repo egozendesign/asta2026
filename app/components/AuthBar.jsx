@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { TEAMS } from '../lib/constants';
 import { useAsta } from './AstaProvider';
+import Nav from './Nav';
 
 /* Barra di login condivisa fra la home e /mercato.
 
@@ -37,6 +38,7 @@ export default function AuthBar({ ctx, hint }) {
 
   return (
     <div id="authbar">
+      <Nav />
       <AnimatePresence mode="wait" initial={false}>
         {me ? (
           <motion.div className="arow" key="logged" {...rowAnim}>
@@ -75,7 +77,7 @@ export default function AuthBar({ ctx, hint }) {
         {hint
           ?? (me
             ? 'Puoi modificare solo la riga della tua squadra. Le altre sono in sola lettura.'
-            : 'Puoi leggere tutto senza PIN. Il PIN serve solo per votare, ed è lo stesso della pagina scambi.')}
+            : 'Puoi leggere tutto senza PIN. Il PIN serve solo per votare, ed è lo stesso del mercato.')}
       </div>
     </div>
   );
