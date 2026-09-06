@@ -1,13 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const ALT = 'Gli Amici di Maria — Stagione 2026/2027';
 
-/* Stessa ricetta dell'header della home (logo a sinistra, testo a destra),
-   con in più il link di ritorno: le due pagine condividono la sessione, quindi
-   devono anche sembrare la stessa app. */
+/* Stessa ricetta dell'header della home (logo a sinistra, testo a destra): le
+   due pagine condividono la sessione, quindi devono anche sembrare la stessa
+   app. Il ritorno all'asta non sta qui ma nella barra di menu (Nav), sempre a
+   schermo: due link di navigazione impilati erano solo rumore. */
 export default function MercatoHero() {
   const reduce = useReducedMotion();
 
@@ -38,9 +38,6 @@ export default function MercatoHero() {
           <motion.div className="sub" {...reveal(0.33)}>
             Le offerte sono pubbliche e si aggiornano da sole. Per partecipare serve il PIN della tua
             squadra, lo stesso della pagina dell’asta.
-          </motion.div>
-          <motion.div {...reveal(0.42)} style={{ marginTop: 14 }}>
-            <Link href="/" className="mk-back">← Torna alla pagina dell’asta</Link>
           </motion.div>
         </div>
       </div>
