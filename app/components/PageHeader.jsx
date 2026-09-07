@@ -14,7 +14,7 @@ const TITOLO = 'Fantacalcio 26/27';
    Su mobile resta la stessa disposizione del desktop, in riga: prima andava in
    colonna con il logo a 148px e occupava mezzo schermo, obbligando a scorrere
    tutto per arrivare ai contenuti. */
-export default function PageHeader({ sezione, pill }) {
+export default function PageHeader({ pill }) {
   const reduce = useReducedMotion();
 
   const reveal = (delay) => ({
