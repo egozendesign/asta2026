@@ -11,18 +11,10 @@ export default function AdminPage() {
   return (
     <MercatoProvider>
       <div className="wrap">
-        <header>
-          <div className="hero">
-            <div className="hero-text">
-              <h1>Backoffice mercato</h1>
-              <div className="sub">
-                Modifica e cancellazione delle righe inserite dalle squadre.
-              </div>
-              <div style={{ marginTop: 14 }}>
-                <Link href="/mercato" className="mk-back">← Torna al mercato</Link>
-              </div>
-            </div>
-          </div>
+        <header className="pagehead">
+          <h1>Backoffice mercato</h1>
+          <p className="sub">Modifica e cancellazione delle righe inserite dalle squadre.</p>
+          <Link href="/mercato" className="mk-back">← Torna al mercato</Link>
         </header>
         <AdminPanel />
       </div>
