@@ -1,32 +1,19 @@
 'use client';
 
 import MercatoProvider, { useMercato } from '../components/mercato/MercatoProvider';
-import PageHeader from '../components/PageHeader';
 import MercatoTabs from '../components/mercato/MercatoTabs';
-import AuthBar from '../components/AuthBar';
+import TopBar from '../components/TopBar';
 
-/* La barra di login è quella della home: stessa sessione, stesso cookie.
+/* L'intestazione è la stessa della home: stessa sessione, stesso cookie.
    Serve un piccolo wrapper perché il contesto va letto dentro il provider. */
 function Bar() {
-  const ctx = useMercato();
-  return (
-    <AuthBar
-      ctx={ctx}
-      // Da loggati nessun testo: la barra deve restare bassa, soprattutto su mobile.
-      hint={
-        ctx.me
-          ? ''
-          : 'Puoi leggere tutto senza PIN. Il PIN serve per offrire e proporre, ed è lo stesso della pagina dell’asta.'
-      }
-    />
-  );
+  return <TopBar ctx={useMercato()} />;
 }
 
 export default function MercatoPage() {
   return (
     <MercatoProvider>
       <div className="wrap">
-        <PageHeader pill="Scambi · Svincolati · Proposti" />
         <Bar />
         <MercatoTabs />
         {/* Nessun link al backoffice, da nessuna parte: l'indirizzo lo conosce

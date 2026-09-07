@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import AstaProvider from './components/AstaProvider';
-import PageHeader from './components/PageHeader';
-import AuthBar from './components/AuthBar';
+import TopBar from './components/TopBar';
 import IntroSection from './components/IntroSection';
 import LocationPoll from './components/LocationPoll';
 import TimePoll from './components/TimePoll';
@@ -20,8 +19,7 @@ export default function Page() {
   return (
     <AstaProvider>
       <div className="wrap">
-        <PageHeader pill="Giovedì 3 Settembre 2026" />
-        <AuthBar />
+        <TopBar />
         <IntroSection />
         <LocationPoll />
         <TimePoll />

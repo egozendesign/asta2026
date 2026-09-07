@@ -7,7 +7,7 @@
    Portato dalla vecchia pagina statica e ritoccato per:
    - leggibilità (testi meno sottili e meno grigi)
    - box login con angoli uniformati agli altri box
-   - hero con logo grande a sinistra e testo a destra (colonna su mobile)
+   - intestazione a due box: quadrato col logo + titolo, nav e accesso
    ===================================================================== */
 
 :root{
@@ -58,39 +58,60 @@ section{position:relative;background:var(--glass);
   -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
   box-shadow:var(--shadow),var(--hi)}
 
-/* ---------- header / hero (gradient border shell) ---------- */
-header{position:relative;border-radius:28px;padding:1px;margin-bottom:16px;
-  background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 45%,rgba(34,197,93,.14));
-  box-shadow:var(--shadow)}
-.hero{position:relative;border-radius:27px;padding:30px 30px;overflow:hidden;
-  display:flex;align-items:center;gap:28px;text-align:left;
-  background:
-    radial-gradient(420px 240px at 18% -20%, rgba(34,197,93,.18), transparent 65%),
-    linear-gradient(180deg,rgba(18,24,21,.85),rgba(11,15,13,.92));
-  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
-.hero .logo{width:178px;height:178px;object-fit:contain;flex:none;display:block;
-  filter:drop-shadow(0 0 26px rgba(34,197,93,.45)) drop-shadow(0 14px 30px rgba(0,0,0,.6))}
-.hero-text{flex:1;min-width:0}
-.hero h1{margin:0 0 12px;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-.025em;color:#fff}
-.hero .date{display:inline-flex;align-items:center;gap:7px;
-  color:var(--acc);font-weight:600;font-size:13px;letter-spacing:.02em;
-  background:var(--acc-soft);border:1px solid rgba(34,197,93,.28);
-  padding:6px 14px;border-radius:9999px}
-.hero .sub{color:var(--txt);font-size:15px;font-weight:400;margin-top:12px;max-width:60ch}
-/* Su mobile l'header teneva il logo a 148px sopra il testo, in colonna: mezzo
-   schermo speso prima di arrivare ai contenuti. Stessa disposizione del desktop
-   (logo a sinistra, testo a destra) e misure ridotte. */
-@media(max-width:600px){
-  header{border-radius:20px}
-  .hero{border-radius:19px;flex-direction:row;align-items:center;text-align:left;
-    gap:14px;padding:14px 16px}
-  .hero .logo{width:64px;height:64px;
-    filter:drop-shadow(0 0 14px rgba(34,197,93,.4)) drop-shadow(0 6px 14px rgba(0,0,0,.5))}
-  .hero-text{width:auto}
-  .hero h1{font-size:20px;line-height:25px;margin:0 0 8px}
-  .hero .date{font-size:11.5px;padding:4px 11px}
-  .hero .sub{margin-left:auto;margin-right:auto}
+/* ---------- intestazione: quadrato del logo + box principale ---------- */
+/* Mobile (default): i due box impilati, logo e titolo affiancati nel primo.
+   Da 901px in su stanno sulla stessa riga, e il primo diventa un quadrato col
+   solo logo — il titolo passa al box di destra. */
+
+.toprow{display:grid;gap:12px;margin-bottom:16px}
+
+.idbox{display:flex;align-items:center;gap:14px;padding:14px 16px;
+  background:var(--glass);border:1px solid var(--line);border-radius:16px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+.idlogo{width:64px;height:64px;object-fit:contain;flex:none;display:block;
+  filter:drop-shadow(0 0 16px rgba(34,197,93,.45)) drop-shadow(0 8px 18px rgba(0,0,0,.55))}
+.idtitle{font-size:24px;line-height:29px;font-weight:600;letter-spacing:-.025em;color:#fff}
+
+.mainbox{position:relative;display:flex;flex-direction:column;gap:12px;
+  padding:14px 16px;
+  background:var(--glass-2);border:1px solid var(--line);border-radius:16px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+/* su mobile il titolo sta accanto al logo, qui sarebbe un doppione */
+.mbtitle{display:none}
+.mb-left{min-width:0}
+.mb-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mb-stato{font-size:12.5px;font-weight:500;margin-right:auto;
+  overflow-wrap:anywhere;max-width:100%}
+
+@media(min-width:901px){
+  .toprow{grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:stretch}
+  /* Il quadrato non può dedurre l'altezza della riga: la fissa lui, e il box
+     di fianco ci si adegua con min-height. */
+  .idbox{width:132px;height:132px;padding:15px;justify-content:center}
+  .idlogo{width:100%;height:100%;
+    filter:drop-shadow(0 0 22px rgba(34,197,93,.45)) drop-shadow(0 10px 22px rgba(0,0,0,.6))}
+  .idtitle{display:none}
+
+  .mainbox{min-height:132px;flex-direction:row;align-items:flex-end;
+    justify-content:space-between;gap:20px;padding:20px 22px;
+    background:var(--glass)}
+  .mbtitle{display:block;margin:0 0 12px;font-size:29px;line-height:34px;
+    font-weight:600;letter-spacing:-.025em;color:#fff}
+  /* la colonna di destra si appoggia in basso, sulla riga di Asta/Mercato */
+  .mb-right{flex:none;justify-content:flex-end}
+  .mb-stato{margin-right:0;max-width:320px;text-align:right}
 }
+
+/* intestazione ridotta del backoffice: nessun logo, solo titolo e ritorno */
+.pagehead{padding:20px 22px;background:var(--glass);border:1px solid var(--line);
+  border-radius:16px;margin-bottom:16px;
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  box-shadow:var(--shadow),var(--hi)}
+.pagehead h1{margin:0 0 6px;font-size:26px;line-height:31px;font-weight:600;
+  letter-spacing:-.025em;color:#fff}
+.pagehead .sub{color:var(--muted);font-size:14px;margin:0 0 14px}
 
 /* ---------- section headings ---------- */
 h2{margin:0 0 14px;font-size:19px;font-weight:600;letter-spacing:-.02em;
@@ -107,9 +128,10 @@ h2 .num{background:var(--acc);color:#050806;min-width:28px;height:28px;padding:0
 .note.info{border-left-color:var(--acc);background:var(--acc-soft)}
 .note.bad{border-left-color:var(--danger);background:rgba(239,68,68,.10)}
 
-/* ---------- barra di menu (dentro #authbar) ---------- */
-.nav{display:flex;gap:4px;margin:-2px 0 12px;padding-bottom:12px;
-  border-bottom:1px solid var(--line)}
+/* ---------- barra di menu (dentro il box principale) ---------- */
+/* Nessun bordo e nessuna spaziatura sotto: la nav e' l'ultima cosa nella
+   colonna di sinistra, e i pulsanti a destra si allineano alla sua base. */
+.nav{display:flex;gap:4px}
 .nav-link{position:relative;display:inline-flex;align-items:center;justify-content:center;
   padding:7px 16px;border-radius:9999px;text-decoration:none;
   color:var(--muted);font-size:13.5px;font-weight:600;letter-spacing:-.005em;
@@ -125,20 +147,11 @@ h2 .num{background:var(--acc);color:#050806;min-width:28px;height:28px;padding:0
   .nav-link{flex:1;padding:8px 10px;font-size:14px}
 }
 
-/* ---------- auth bar ---------- */
-#authbar{position:sticky;top:10px;z-index:30;margin-bottom:16px;
-  background:var(--glass-2);border:1px solid var(--line);border-radius:16px;
-  padding:14px 16px;
-  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
-  box-shadow:var(--shadow),var(--hi)}
+/* ---------- pezzi dell'intestazione ---------- */
 .arow{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.arow label{font-size:12.5px;color:var(--muted);font-weight:600;padding-left:2px}
-#who{flex:1;min-width:150px}
-#pin{width:96px;letter-spacing:5px;text-align:center;font-size:15px;font-weight:600}
-#status,#status2{font-size:12.5px;margin-left:auto;white-space:nowrap;padding-right:4px;font-weight:500}
 .ok{color:var(--acc)} .err{color:var(--danger)} .wait{color:var(--muted)}
 .me-badge{background:var(--acc-soft);border:1px solid rgba(34,197,93,.35);color:var(--acc);
-  border-radius:9999px;padding:6px 14px;font-weight:600;font-size:13px}
+  border-radius:9999px;padding:6px 14px;font-weight:600;font-size:13px;white-space:nowrap}
 .hint{font-size:12px;color:var(--muted);margin-top:10px;padding:0 2px;line-height:1.5}
 
 /* ---------- controls ---------- */
@@ -160,6 +173,10 @@ textarea{min-height:52px;resize:vertical;border-radius:10px}
 select:focus,textarea:focus,input:focus{outline:none;border-color:var(--acc);
   box-shadow:0 0 0 3px var(--acc-soft)}
 select option{background:var(--surface);color:var(--txt)}
+
+/* nell'intestazione i campi stanno in riga, non a tutta larghezza */
+.mb-right select{width:auto;min-width:150px;max-width:100%}
+.mb-right input{width:92px;letter-spacing:5px;text-align:center;font-weight:600}
 
 /* ---------- vote option cards ---------- */
 .opts{display:grid;gap:10px;grid-template-columns:1fr 1fr;margin:18px 0 6px}
