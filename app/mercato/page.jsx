@@ -26,8 +26,10 @@ export default function MercatoPage() {
   return (
     <MercatoProvider>
       <div className="wrap">
-        <PageHeader pill="Scambi · Svincolati · Proposti" />
-        <Bar />
+        <div className="toprow">
+          <PageHeader pill="Scambi · Svincolati · Proposti" />
+          <Bar />
+        </div>
         <MercatoTabs />
         {/* Nessun link al backoffice, da nessuna parte: l'indirizzo lo conosce
             solo chi lo deve usare. */}

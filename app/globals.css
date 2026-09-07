@@ -92,6 +92,35 @@ header{position:relative;border-radius:28px;padding:1px;margin-bottom:16px;
   .hero .sub{margin-left:auto;margin-right:auto}
 }
 
+/* ---------- riga in alto: intestazione + barra affiancate ---------- */
+/* Su desktop i due box stanno sulla stessa riga: impilati sprecavano parecchia
+   altezza prima di arrivare ai contenuti.
+
+   Sotto la soglia il contenitore sparisce con display:contents — non genera un
+   box, quindi i due figli tornano a essere figli diretti di .wrap e si
+   impilano esattamente come prima. Serve per #authbar, che è sticky: dentro un
+   contenitore alto quanto la riga non avrebbe spazio per scorrere e smetterebbe
+   di seguire lo scroll su mobile. */
+/* Sotto la soglia il contenitore non genera un box: i due figli tornano figli
+   diretti di .wrap e nient'altro cambia. Anche gli override qui sotto vivono
+   nel media query, altrimenti si applicherebbero comunque e toglierebbero lo
+   sticky a #authbar anche su mobile. */
+.toprow{display:contents}
+
+@media(min-width:901px){
+  .toprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);
+    gap:16px;align-items:stretch;margin-bottom:16px}
+  .toprow > header{margin-bottom:0}
+  /* nella riga la barra non è più sticky: non avrebbe spazio per scorrere */
+  .toprow > #authbar{position:static;top:auto;margin-bottom:0;
+    display:flex;flex-direction:column;justify-content:center}
+  /* Il logo grande teneva il box di sinistra a 240px contro i 145 di destra:
+     affiancati, o restava un buco o uno dei due si allungava mezzo vuoto.
+     A 88px l'altezza e' gia' quasi la minima possibile — sotto i ~90px a
+     comandare sono il titolo e la pastiglia, non piu' il logo. */
+  .hero .logo{width:88px;height:88px}
+}
+
 /* ---------- section headings ---------- */
 h2{margin:0 0 14px;font-size:19px;font-weight:600;letter-spacing:-.02em;
   display:flex;align-items:center;gap:11px;color:#fff}

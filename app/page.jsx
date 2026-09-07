@@ -20,8 +20,10 @@ export default function Page() {
   return (
     <AstaProvider>
       <div className="wrap">
-        <PageHeader pill="Giovedì 3 Settembre 2026" />
-        <AuthBar />
+        <div className="toprow">
+          <PageHeader pill="Giovedì 3 Settembre 2026" />
+          <AuthBar />
+        </div>
         <IntroSection />
         <LocationPoll />
         <TimePoll />
