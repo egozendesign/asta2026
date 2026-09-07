@@ -381,6 +381,19 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
 .mk-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
   margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 
+/* ---------- rilancio dentro la scheda ---------- */
+.mk-rilancio{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.mk-rilancio .mk-label{margin-right:2px}
+.mk-rilancio input{width:118px;font-weight:600;text-align:center}
+.mk-rilancio .btn{padding:8px 18px}
+.mk-rilancio-hint{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--muted)}
+@media(max-width:600px){
+  .mk-rilancio input{flex:1;min-width:0}
+  .mk-rilancio .btn{flex:none}
+}
+
 /* ---------- rilanci ---------- */
 .mk-toggle{margin-top:12px;background:transparent;border:0;padding:0;cursor:pointer;
   font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);

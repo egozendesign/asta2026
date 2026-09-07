@@ -80,6 +80,9 @@ export default function MercatoProvider({ children }) {
   }, []);
 
   const offri = useCallback((nome, offerta) => send('offerta', { nome, offerta }), [send]);
+  // Rilancio su un'asta esistente: si manda la chiave dell'asta, non il nome
+  // scritto a mano, cosi' il rilancio non puo' finire su un'asta sbagliata.
+  const rilancia = useCallback((asta, offerta) => send('rilancio', { asta, offerta }), [send]);
   const proponiScambio = useCallback((payload) => send('scambio', payload), [send]);
   const proponiGiocatore = useCallback((nome, ruoli) => send('proposta', { nome, ruoli }), [send]);
   const cancella = useCallback((lista, id) => send('del', { lista, id }), [send]);
@@ -189,7 +192,7 @@ export default function MercatoProvider({ children }) {
     <MercatoCtx.Provider
       value={{
         mercato, me, status, login, logout,
-        offri, proponiScambio, proponiGiocatore, cancella,
+        offri, rilancia, proponiScambio, proponiGiocatore, cancella,
         admin, adminAvailable, adminStatus, adminLogin, adminLogout, adminEdit, adminDel,
       }}
     >

@@ -3,8 +3,58 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMercato } from './MercatoProvider';
-import { deriveAuctions, formatDate } from '../../lib/mercato';
+import { deriveAuctions, formatDate, LIMITS } from '../../lib/mercato';
 import Countdown from './Countdown';
+
+/* Rilancio dentro la scheda dell'asta.
+
+   Prima l'unico modo di rilanciare era riscrivere il nome del giocatore nel
+   form in alto, identico carattere per carattere: una lettera diversa e invece
+   di rilanciare si apriva un'asta parallela. Qui il nome non si scrive proprio,
+   si manda la chiave dell'asta e il nome lo mette il server.
+
+   Visibile a chiunque sia entrato col PIN, compresa la squadra che è in testa:
+   rilanciare su se stessi è inutile ma non è un errore, e nasconderlo
+   costringerebbe a spiegare perché il riquadro a volte non c'è. */
+function Rilancio({ asta }) {
+  const { me, rilancia } = useMercato();
+  const [offerta, setOfferta] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (!me) {
+    return (
+      <p className="mk-rilancio-hint">Inserisci il PIN della tua squadra per rilanciare.</p>
+    );
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    const ok = await rilancia(asta.key, offerta);
+    if (ok) setOfferta('');
+    setBusy(false);
+  };
+
+  return (
+    <form className="mk-rilancio" onSubmit={submit}>
+      <label className="mk-label" htmlFor={`ril-${asta.key}`}>Rilancia</label>
+      <input
+        id={`ril-${asta.key}`}
+        type="number"
+        inputMode="numeric"
+        min={asta.highestBid + 1}
+        max={LIMITS.offertaMax}
+        value={offerta}
+        onChange={(e) => setOfferta(e.target.value)}
+        placeholder={`min ${asta.highestBid + 1}`}
+        required
+      />
+      <button className="btn" type="submit" disabled={busy}>
+        {busy ? 'Invio…' : 'Rilancia'}
+      </button>
+    </form>
+  );
+}
 
 /* Le aste non sono righe salvate: si ricostruiscono dalle offerte a ogni
    render (vedi deriveAuctions). `tick` esiste solo per rifare il calcolo
@@ -75,6 +125,8 @@ export default function AuctionList() {
                 )}
               </div>
             </div>
+
+            {!a.closed && <Rilancio asta={a} />}
 
             <button
               type="button"

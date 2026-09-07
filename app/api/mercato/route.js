@@ -402,6 +402,42 @@ export async function POST(request) {
       return json({ team, mercato: await readAll() });
     }
 
+    /* --- rilancio su un'asta già aperta --- */
+    // Il nome del giocatore NON arriva dal client: si prende dall'asta stessa.
+    // Prima l'unico modo di rilanciare era riscrivere il nome identico nel form,
+    // e un carattere diverso apriva un'asta parallela invece di rilanciare.
+    if (action === 'rilancio') {
+      const chiave = String(body.asta || '');
+      if (!chiave) return json({ error: 'Asta non indicata.' }, 400);
+
+      const offerta = parseOffer(body.offerta);
+      if (offerta === null) {
+        return json({ error: `Offerta non valida (da ${LIMITS.offertaMin} a ${LIMITS.offertaMax}).` }, 400);
+      }
+
+      const asta = deriveAuctions(await readList(KEYS.svincolati)).find((a) => a.key === chiave);
+      if (!asta) return json({ error: 'Asta non trovata.' }, 404);
+      if (asta.closed) {
+        return json({ error: `Asta chiusa: ${asta.displayName} è andato a ${asta.leadingTeam}.` }, 409);
+      }
+      if (offerta <= asta.highestBid) {
+        return json(
+          { error: `Devi superare l'offerta in testa (${asta.highestBid} da ${asta.leadingTeam}).` },
+          409
+        );
+      }
+
+      const record = {
+        id: crypto.randomUUID(),
+        team,
+        nome: asta.displayName,   // nome canonico dell'asta, non quello digitato
+        offerta,
+        data: new Date().toISOString(),
+      };
+      await append(KEYS.svincolati, record);
+      return json({ team, mercato: await readAll() });
+    }
+
     /* --- proposta di scambio --- */
     if (action === 'scambio') {
       const ricevente = String(body.ricevente || '');

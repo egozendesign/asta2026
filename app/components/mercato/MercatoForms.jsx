@@ -77,7 +77,11 @@ export function OffertaForm() {
       />
 
       <Submit busy={busy}>Invia offerta</Submit>
-      <p className="hint">Offri come <strong>{me}</strong>. La prima offerta apre l’asta e fa partire 24 ore.</p>
+      <p className="hint">
+        Offri come <strong>{me}</strong>. Questo form <strong>apre una nuova asta</strong> e fa
+        partire 24 ore. Per rilanciare su un’asta già aperta usa il campo dentro la sua scheda,
+        qui a fianco: non serve riscrivere il nome.
+      </p>
     </form>
   );
 }
