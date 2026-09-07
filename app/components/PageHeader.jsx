@@ -8,13 +8,17 @@ const TITOLO = 'Fantacalcio 26/27';
 /* Header condiviso da tutte le pagine: logo a sinistra, testo a destra.
 
    Prima erano due componenti quasi identici (Hero e MercatoHero) che
-   divergevano nei dettagli. Cambiano solo due parole per pagina — il nome della
-   sezione e il contenuto della pastiglia verde — quindi arrivano da fuori.
+   divergevano nei dettagli. Cambia una cosa sola per pagina, il contenuto della
+   pastiglia verde, quindi arriva da fuori.
+
+   Sotto il titolo c'era anche il nome della sezione ("Organizzazione Asta",
+   "Mercato"): l'ha gia' la barra di menu poco piu' sotto, che evidenzia la
+   pagina attiva, quindi ripeterlo qui era solo altezza sprecata.
 
    Su mobile resta la stessa disposizione del desktop, in riga: prima andava in
    colonna con il logo a 148px e occupava mezzo schermo, obbligando a scorrere
    tutto per arrivare ai contenuti. */
-export default function PageHeader({ sezioni , pill }) {
+export default function PageHeader({ pill }) {
   const reduce = useReducedMotion();
 
   const reveal = (delay) => ({
@@ -40,8 +44,7 @@ export default function PageHeader({ sezioni , pill }) {
         />
         <div className="hero-text">
           <motion.h1 {...reveal(0.15)}>{TITOLO}</motion.h1>
-          <motion.div className="hero-sez" {...reveal(0.22)}>{sezione}</motion.div>
-          <motion.div className="date" {...reveal(0.3)}>{pill}</motion.div>
+          <motion.div className="date" {...reveal(0.24)}>{pill}</motion.div>
         </div>
       </div>
     </header>

@@ -20,7 +20,7 @@ export default function Page() {
   return (
     <AstaProvider>
       <div className="wrap">
-        <PageHeader sezione="Organizzazione Asta" pill="Giovedì 3 Settembre 2026" />
+        <PageHeader pill="Giovedì 3 Settembre 2026" />
         <AuthBar />
         <IntroSection />
         <LocationPoll />
