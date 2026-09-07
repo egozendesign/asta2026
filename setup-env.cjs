@@ -51,8 +51,8 @@ const ask = (q) => new Promise((res) => rl.question(q, res));
 
   // Il backoffice puo' riscrivere e cancellare i dati di tutti, quindi il suo
   // codice non e' un PIN a 4 cifre come quelli di gioco: e' generato lungo e a
-  // caso. Senza questa variabile /mercato/admin resta chiuso a chiunque.
-  console.log('Nome:   ADMIN_PIN        (backoffice /mercato/admin)');
+  // caso. Senza questa variabile /mercato/edit resta chiuso a chiunque.
+  console.log('Nome:   ADMIN_PIN        (backoffice /mercato/edit)');
   console.log('Valore: ' + crypto.randomBytes(12).toString('base64url') + '\n');
 
   console.log('='.repeat(70));

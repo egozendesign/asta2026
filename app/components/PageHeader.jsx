@@ -3,12 +3,18 @@
 import { motion, useReducedMotion } from 'framer-motion';
 
 const ALT = 'Gli Amici di Maria — Stagione 2026/2027';
+const TITOLO = 'Fantacalcio 26/27';
 
-/* Stessa ricetta dell'header della home (logo a sinistra, testo a destra): le
-   due pagine condividono la sessione, quindi devono anche sembrare la stessa
-   app. Il ritorno all'asta non sta qui ma nella barra di menu (Nav), sempre a
-   schermo: due link di navigazione impilati erano solo rumore. */
-export default function MercatoHero() {
+/* Header condiviso da tutte le pagine: logo a sinistra, testo a destra.
+
+   Prima erano due componenti quasi identici (Hero e MercatoHero) che
+   divergevano nei dettagli. Cambiano solo due parole per pagina — il nome della
+   sezione e il contenuto della pastiglia verde — quindi arrivano da fuori.
+
+   Su mobile resta la stessa disposizione del desktop, in riga: prima andava in
+   colonna con il logo a 148px e occupava mezzo schermo, obbligando a scorrere
+   tutto per arrivare ai contenuti. */
+export default function PageHeader({ sezione, pill }) {
   const reduce = useReducedMotion();
 
   const reveal = (delay) => ({
@@ -33,12 +39,9 @@ export default function MercatoHero() {
           transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 140, damping: 14, delay: 0.05 }}
         />
         <div className="hero-text">
-          <motion.h1 {...reveal(0.15)}>Mercato 26/27</motion.h1>
-          <motion.div className="date" {...reveal(0.24)}>Scambi · Svincolati · Proposti</motion.div>
-          <motion.div className="sub" {...reveal(0.33)}>
-            Le offerte sono pubbliche e si aggiornano da sole. Per partecipare serve il PIN della tua
-            squadra, lo stesso della pagina dell’asta.
-          </motion.div>
+          <motion.h1 {...reveal(0.15)}>{TITOLO}</motion.h1>
+          <motion.div className="hero-sez" {...reveal(0.22)}>{sezione}</motion.div>
+          <motion.div className="date" {...reveal(0.3)}>{pill}</motion.div>
         </div>
       </div>
     </header>

@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import MercatoProvider, { useMercato } from '../components/mercato/MercatoProvider';
-import MercatoHero from '../components/mercato/MercatoHero';
+import PageHeader from '../components/PageHeader';
 import MercatoTabs from '../components/mercato/MercatoTabs';
 import AuthBar from '../components/AuthBar';
 
@@ -13,9 +12,10 @@ function Bar() {
   return (
     <AuthBar
       ctx={ctx}
+      // Da loggati nessun testo: la barra deve restare bassa, soprattutto su mobile.
       hint={
         ctx.me
-          ? 'Puoi ritirare solo le offerte e le proposte della tua squadra.'
+          ? ''
           : 'Puoi leggere tutto senza PIN. Il PIN serve per offrire e proporre, ed è lo stesso della pagina dell’asta.'
       }
     />
@@ -26,15 +26,12 @@ export default function MercatoPage() {
   return (
     <MercatoProvider>
       <div className="wrap">
-        <MercatoHero />
+        <PageHeader sezione="Mercato" pill="Scambi · Svincolati · Proposti" />
         <Bar />
         <MercatoTabs />
-        <footer>
-          Il mercato si aggiorna automaticamente ogni 15 secondi
-          <div style={{ marginTop: 10 }}>
-            <Link href="/mercato/admin" className="adm-link">Backoffice</Link>
-          </div>
-        </footer>
+        {/* Nessun link al backoffice, da nessuna parte: l'indirizzo lo conosce
+            solo chi lo deve usare. */}
+        <footer>Il mercato si aggiorna automaticamente ogni 15 secondi</footer>
       </div>
     </MercatoProvider>
   );

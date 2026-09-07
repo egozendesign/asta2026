@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import AstaProvider from './components/AstaProvider';
-import Hero from './components/Hero';
+import PageHeader from './components/PageHeader';
 import AuthBar from './components/AuthBar';
 import IntroSection from './components/IntroSection';
 import LocationPoll from './components/LocationPoll';
@@ -20,7 +20,7 @@ export default function Page() {
   return (
     <AstaProvider>
       <div className="wrap">
-        <Hero />
+        <PageHeader sezione="Organizzazione Asta" pill="Giovedì 3 Settembre 2026" />
         <AuthBar />
         <IntroSection />
         <LocationPoll />

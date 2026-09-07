@@ -11,7 +11,7 @@
 //   KV_REST_API_TOKEN   (dall'integrazione Upstash Redis)
 //   TEAM_PINS           JSON: {"Pandamonio":"1234", ...}
 //   SESSION_SECRET      stringa random lunga (>= 32 caratteri)
-//   ADMIN_PIN           (facoltativa) codice del backoffice /mercato/admin.
+//   ADMIN_PIN           (facoltativa) codice del backoffice /mercato/edit.
 //                       Se manca, il pannello resta chiuso a chiunque.
 
 import crypto from 'crypto';
