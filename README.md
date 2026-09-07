@@ -9,7 +9,7 @@ asta/
 │   ├── layout.jsx            # layout, font Inter, metadati
 │   ├── page.jsx              # home dell'asta (compone i componenti)
 │   ├── mercato/page.jsx      # /mercato — scambi, svincolati, proposti
-│   ├── mercato/admin/page.jsx # /mercato/admin — backoffice
+│   ├── mercato/edit/page.jsx # /mercato/edit — backoffice
 │   ├── globals.css           # design system (scuro/vetro/verde) + Tailwind
 │   ├── components/           # Hero, AuthBar, sezioni, voti, barre
 │   │   ├── Nav.jsx           # barra di menu fra asta e mercato
@@ -123,11 +123,15 @@ Ogni lista è limitata alle 500 righe più recenti (`LTRIM`).
 | Si potevano scegliere due volte lo stesso ruolo | selezione a chip, il doppione non è rappresentabile |
 | Rate limiting client-side per la quota Airtable | cooldown di 3s per squadra lato server |
 
-## Backoffice (`/mercato/admin`)
+## Backoffice (`/mercato/edit`)
 
 Pannello per correggere e cancellare le righe inserite dalle squadre: offerte,
 scambi e giocatori proposti. Serve quando qualcuno sbaglia a scrivere un nome,
 invia dal profilo sbagliato o inserisce una riga per errore.
+
+Non è linkato da nessuna parte: ci si arriva solo scrivendo l'indirizzo. Non è
+una misura di sicurezza — quella è il codice — ma tiene il pannello fuori dalla
+vista dei curiosi.
 
 L'accesso **non** usa i PIN di gioco: c'è una variabile d'ambiente dedicata,
 `ADMIN_PIN` (almeno 6 caratteri), e una sessione con un cookie suo che dura

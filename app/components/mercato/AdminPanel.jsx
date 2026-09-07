@@ -384,17 +384,17 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={lista}
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
-          transition={{ duration: reduce ? 0 : 0.2 }}
-        >
-          <ListaAdmin lista={lista} />
-        </motion.div>
-      </AnimatePresence>
+      {/* niente AnimatePresence mode="wait" qui: vedi il commento in
+          MercatoTabs.jsx — si incastra se un aggiornamento di stato arriva
+          durante l'uscita, e la lista non viene piu' montata. */}
+      <motion.div
+        key={lista}
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduce ? 0 : 0.2 }}
+      >
+        <ListaAdmin lista={lista} />
+      </motion.div>
     </>
   );
 }
