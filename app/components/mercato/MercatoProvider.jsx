@@ -83,9 +83,10 @@ export default function MercatoProvider({ children }) {
   // Rilancio su un'asta esistente: si manda la chiave dell'asta, non il nome
   // scritto a mano, cosi' il rilancio non puo' finire su un'asta sbagliata.
   const rilancia = useCallback((asta, offerta) => send('rilancio', { asta, offerta }), [send]);
-  // Giocatore che la squadra libera per far posto a quello vinto all'asta.
-  // Nome vuoto = non deve svincolare nessuno: il server toglie la riga.
-  const svincola = useCallback((asta, nome) => send('svincolo', { asta, nome }), [send]);
+  // Risposta del vincitore entro le 6 ore: { nome } se libera un giocatore,
+  // { nessuno: true } se la rosa era già a posto. Senza risposta l'asta si
+  // annulla da sola — non serve mandare niente, basta che scada.
+  const svincola = useCallback((asta, risposta) => send('svincolo', { asta, ...risposta }), [send]);
   const proponiScambio = useCallback((payload) => send('scambio', payload), [send]);
   const proponiGiocatore = useCallback((nome, ruoli) => send('proposta', { nome, ruoli }), [send]);
   const cancella = useCallback((lista, id) => send('del', { lista, id }), [send]);

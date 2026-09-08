@@ -53,7 +53,7 @@ const FIELDS = {
 // Riassunto di una riga quando non e' in modifica.
 function summary(lista, r) {
   if (lista === 'svincolati') return `${r.nome} — ${r.offerta} FM`;
-  if (lista === 'svincoli') return `svincola ${r.nome} (asta: ${r.asta})`;
+  if (lista === 'svincoli') return r.nessuno ? 'nessuno da svincolare' : `svincola ${r.nome}`;
   if (lista === 'scambi') {
     const off = r.creditiOfferti ? ` +${r.creditiOfferti}cr` : '';
     const ric = r.creditiRichiesti ? ` +${r.creditiRichiesti}cr` : '';

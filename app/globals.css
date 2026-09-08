@@ -354,6 +354,9 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
   box-shadow:var(--shadow),var(--hi)}
 .mk-card.mine{border-left-color:var(--acc);background:var(--acc-soft)}
 .mk-card.closed{opacity:.62}
+/* Annullata: non è una card spenta come le concluse, è un fatto da leggere —
+   il giocatore è di nuovo libero e qualcuno deve accorgersene. */
+.mk-card.void{border-left-color:var(--danger);background:rgba(242,96,96,.07)}
 .mk-empty{color:var(--muted);text-align:center;padding:38px 20px;
   background:var(--glass-2);border:1px dashed var(--line-2);border-radius:14px;margin:0}
 
@@ -377,6 +380,9 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
 .mk-badge{display:inline-block;padding:5px 12px;border-radius:9999px;
   font-size:12px;font-weight:600}
 .mk-badge.done{background:var(--acc-soft);border:1px solid rgba(34,197,93,.35);color:var(--acc)}
+.mk-badge.void{background:rgba(242,96,96,.12);border:1px solid rgba(242,96,96,.35);color:var(--danger)}
+.mk-void-note{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--danger)}
 
 .mk-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
   margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
@@ -405,6 +411,9 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
 .mk-svincolo .mk-label{margin-right:2px}
 .mk-svincolo input{flex:1;min-width:180px}
 .mk-svincolo .btn{padding:8px 18px;flex:none}
+/* La seconda risposta possibile. Sta accanto alla prima e non sotto: sono
+   alternative, non un'azione e il suo ripensamento. */
+.mk-svincolo-none{padding:8px 14px;font-size:13px}
 .mk-svincolo-hint{flex-basis:100%;margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
 /* La conferma sta sopra l'aiuto e si prende il colore d'accento: è l'unico
    passaggio della pagina che non si può disfare. */
@@ -418,6 +427,7 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
   .mk-svincolo input{min-width:0;width:100%}
   .mk-svincolo .btn{width:100%}
 }
+@media(max-width:420px){.mk-card-state{min-width:0}}
 
 /* ---------- rilanci ---------- */
 .mk-toggle{margin-top:12px;background:transparent;border:0;padding:0;cursor:pointer;

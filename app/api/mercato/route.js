@@ -256,6 +256,36 @@ async function renameAuction(oldKey, newName, skipId) {
   return touched;
 }
 
+// Le aste servono quasi sempre insieme alle dichiarazioni di svincolo: sono
+// quelle a dire se un'asta chiusa è conclusa o annullata.
+async function readAuctions() {
+  const [offerte, svincoli] = await Promise.all([
+    readList(KEYS.svincolati),
+    readList(KEYS.svincoli),
+  ]);
+  return deriveAuctions(offerte, Date.now(), svincoli);
+}
+
+// Quando un'asta si annulla il giocatore torna disponibile, e disponibile vuol
+// dire davvero da capo: le vecchie offerte se ne vanno, altrimenti la prima
+// nuova offerta finirebbe nello stesso mucchio e l'asta ricomparirebbe scaduta.
+// Si fa qui e non con un lavoro pianificato perché non c'è nessuno a farlo
+// girare: il momento in cui serve è esattamente quello in cui qualcuno riprova
+// a offrire.
+async function purgeAuction(key) {
+  const out = await redis(['LRANGE', KEYS.svincolati, '0', '-1']);
+  const raw = Array.isArray(out.result) ? out.result : [];
+  let tolte = 0;
+  for (const line of raw) {
+    let r;
+    try { r = JSON.parse(line); } catch { continue; }
+    if (playerKey(r?.nome) !== key) continue;
+    await redis(['LREM', KEYS.svincolati, '1', line]);
+    tolte++;
+  }
+  return tolte;
+}
+
 /* ---------- svincoli dichiarati ---------- */
 
 // Si scrive una volta sola. Lo svincolo è un impegno verso le altre squadre,
@@ -275,7 +305,12 @@ async function addSvincolo(astaKey, team, nome) {
     let r;
     try { r = JSON.parse(line); } catch { continue; }
     if (r?.asta === astaKey && r?.team === team) {
-      return { error: `Hai già dichiarato ${r.nome}: lo svincolo si indica una volta sola.`, status: 409 };
+      return {
+        error: r.nessuno
+          ? 'Hai già dichiarato che non devi svincolare nessuno.'
+          : `Hai già dichiarato ${r.nome}: lo svincolo si indica una volta sola.`,
+        status: 409,
+      };
     }
   }
 
@@ -283,7 +318,11 @@ async function addSvincolo(astaKey, team, nome) {
     id: crypto.randomUUID(),
     team,
     asta: astaKey,
+    // nessuno = "la rosa era già a posto". Sta come riga in lista e non come
+    // assenza di riga perché è una risposta data, non una risposta mancante:
+    // è esattamente ciò che distingue un'asta conclusa da una annullata.
     nome,
+    nessuno: !nome,
     data: new Date().toISOString(),
   });
   return { ok: true };
@@ -428,16 +467,28 @@ export async function POST(request) {
       // in testa, e la riga finiva comunque su Airtable come rumore.
       const nome = cleanName(body.nome);
       const key = playerKey(nome);
-      const existing = deriveAuctions(await readList(KEYS.svincolati)).find((a) => a.key === key);
+      const existing = (await readAuctions()).find((a) => a.key === key);
 
-      if (existing?.closed) {
-        return json({ error: `Asta chiusa: ${existing.displayName} è andato a ${existing.leadingTeam}.` }, 409);
-      }
-      if (existing && offerta <= existing.highestBid) {
-        return json(
-          { error: `Devi superare l'offerta in testa (${existing.highestBid} da ${existing.leadingTeam}).` },
-          409
-        );
+      if (existing?.phase === 'annullata') {
+        // Il giocatore è di nuovo libero: si fa piazza pulita e questa offerta
+        // è la prima di un'asta nuova, con 24 ore tutte sue.
+        await purgeAuction(key);
+      } else if (existing) {
+        if (existing.phase === 'conclusa') {
+          return json({ error: `Asta chiusa: ${existing.displayName} è andato a ${existing.leadingTeam}.` }, 409);
+        }
+        if (existing.phase === 'attesa') {
+          return json(
+            { error: `${existing.displayName} è andato a ${existing.leadingTeam}: si aspetta che dichiari lo svincolo.` },
+            409
+          );
+        }
+        if (offerta <= existing.highestBid) {
+          return json(
+            { error: `Devi superare l'offerta in testa (${existing.highestBid} da ${existing.leadingTeam}).` },
+            409
+          );
+        }
       }
 
       const record = {
@@ -464,8 +515,11 @@ export async function POST(request) {
         return json({ error: `Offerta non valida (da ${LIMITS.offertaMin} a ${LIMITS.offertaMax}).` }, 400);
       }
 
-      const asta = deriveAuctions(await readList(KEYS.svincolati)).find((a) => a.key === chiave);
+      const asta = (await readAuctions()).find((a) => a.key === chiave);
       if (!asta) return json({ error: 'Asta non trovata.' }, 404);
+      if (asta.phase === 'annullata') {
+        return json({ error: `Asta annullata: rifai un'offerta su ${asta.displayName} dal form.` }, 409);
+      }
       if (asta.closed) {
         return json({ error: `Asta chiusa: ${asta.displayName} è andato a ${asta.leadingTeam}.` }, 409);
       }
@@ -497,21 +551,42 @@ export async function POST(request) {
       const chiave = String(body.asta || '');
       if (!chiave) return json({ error: 'Asta non indicata.' }, 400);
 
-      const asta = deriveAuctions(await readList(KEYS.svincolati)).find((a) => a.key === chiave);
+      const asta = (await readAuctions()).find((a) => a.key === chiave);
       if (!asta) return json({ error: 'Asta non trovata.' }, 404);
-      if (!asta.closed) {
-        return json({ error: 'L’asta è ancora aperta: lo svincolo si indica quando è aggiudicata.' }, 409);
-      }
       if (asta.leadingTeam !== team) {
         return json(
           { error: `${asta.displayName} è andato a ${asta.leadingTeam}: lo svincolo lo indica chi si è aggiudicato il giocatore.` },
           403
         );
       }
+      if (asta.phase === 'aperta') {
+        return json({ error: 'L’asta è ancora aperta: lo svincolo si indica quando è aggiudicata.' }, 409);
+      }
+      // Fuori tempo massimo. È il controllo che rende vere le 6 ore: senza,
+      // basterebbe tenere la pagina aperta e dichiarare con calma domani.
+      if (asta.phase === 'annullata') {
+        return json(
+          { error: `Le 6 ore sono passate: l’asta è annullata e ${asta.displayName} è tornato fra gli svincolati.` },
+          409
+        );
+      }
+      if (asta.phase === 'conclusa') {
+        return json(
+          { error: asta.svincolo?.nessuno
+            ? 'Hai già dichiarato che non devi svincolare nessuno.'
+            : `Hai già dichiarato ${asta.svincolo?.nome}: lo svincolo si indica una volta sola.` },
+          409
+        );
+      }
 
-      const nome = cleanName(body.nome);
-      const nameErr = validateName(nome);
-      if (nameErr) return json({ error: nameErr }, 400);
+      // Due risposte valide: un nome, oppure "non devo svincolare nessuno".
+      // Chiudono l'asta allo stesso modo, e nessuna delle due si ritratta.
+      const nessuno = body.nessuno === true;
+      const nome = nessuno ? '' : cleanName(body.nome);
+      if (!nessuno) {
+        const nameErr = validateName(nome);
+        if (nameErr) return json({ error: nameErr }, 400);
+      }
 
       const res = await addSvincolo(chiave, team, nome);
       if (res.error) return json({ error: res.error }, res.status);

@@ -76,10 +76,22 @@ export function playerKey(nome) {
   return cleanName(nome).toLowerCase();
 }
 
+/* Un'asta chiusa non è ancora finita: chi ha vinto ha 6 ore per dire chi
+   svincola, o per dire che non deve svincolare nessuno. Se non lo fa, l'asta
+   si annulla e il giocatore torna disponibile.
+
+   Le quattro fasi:
+     aperta    — si rilancia, non sono passate 24h dalla prima offerta
+     attesa    — chiusa, il vincitore ha ancora tempo per lo svincolo
+     conclusa  — svincolo dichiarato: il giocatore è suo
+     annullata — le 6 ore sono passate a vuoto, il giocatore torna in lista */
+export const SVINCOLO_WINDOW_MS = 6 * 60 * 60 * 1000;
+
 // records: lista piatta di offerte { id, team, nome, offerta, data }.
+// svincoli: lista piatta di dichiarazioni { team, asta, nome, nessuno }.
 // Ritorna le aste ordinate: prima quelle aperte (scadenza più vicina in cima),
-// poi quelle chiuse (chiuse di recente in cima).
-export function deriveAuctions(records, now = Date.now()) {
+// poi quelle in attesa di svincolo, infine quelle finite (più recenti in cima).
+export function deriveAuctions(records, now = Date.now(), svincoli = []) {
   const byPlayer = new Map();
 
   for (const r of records) {
@@ -107,6 +119,7 @@ export function deriveAuctions(records, now = Date.now()) {
     // successivi non lo riavviano (comportamento dell'app originale).
     const firstTs = a.bids[0].ts;
     const endsAt = firstTs + AUCTION_DURATION_MS;
+    const svincoloEndsAt = endsAt + SVINCOLO_WINDOW_MS;
 
     // A parità di importo vince chi ha offerto per primo, perché scorriamo in
     // ordine cronologico e sostituiamo solo su offerta strettamente maggiore.
@@ -119,6 +132,14 @@ export function deriveAuctions(records, now = Date.now()) {
       }
     }
 
+    const svincolo = leader
+      ? svincoli.find((r) => r?.asta === a.key && r?.team === leader) || null
+      : null;
+
+    const closed = endsAt <= now;
+    let phase = 'aperta';
+    if (closed) phase = svincolo ? 'conclusa' : now < svincoloEndsAt ? 'attesa' : 'annullata';
+
     auctions.push({
       key: a.key,
       displayName: a.displayName,
@@ -128,26 +149,21 @@ export function deriveAuctions(records, now = Date.now()) {
       firstBidAt: firstTs,
       lastBidAt: a.bids[a.bids.length - 1].ts,
       endsAt,
-      closed: endsAt <= now,
+      svincoloEndsAt,
+      svincolo,
+      phase,
+      closed,
     });
   }
 
+  const rango = { aperta: 0, attesa: 1, conclusa: 2, annullata: 2 };
   auctions.sort((x, y) => {
-    if (x.closed !== y.closed) return x.closed ? 1 : -1;
-    return x.closed ? y.endsAt - x.endsAt : x.endsAt - y.endsAt;
+    if (rango[x.phase] !== rango[y.phase]) return rango[x.phase] - rango[y.phase];
+    if (x.phase === 'aperta') return x.endsAt - y.endsAt;
+    if (x.phase === 'attesa') return x.svincoloEndsAt - y.svincoloEndsAt;
+    return y.endsAt - x.endsAt;
   });
   return auctions;
-}
-
-/* ---------- svincoli dichiarati ---------- */
-
-// Chi vince un'asta con la rosa piena deve liberare uno slot. La dichiarazione
-// è una riga { id, team, asta (playerKey), nome, data }: al massimo una per
-// coppia asta+squadra, perché è un campo che si corregge, non un evento che si
-// accumula come le offerte — il server la riscrive invece di accodarla.
-export function findSvincolo(records, astaKey, team) {
-  if (!Array.isArray(records) || !astaKey || !team) return null;
-  return records.find((r) => r?.asta === astaKey && r?.team === team) || null;
 }
 
 // Uno scambio resta "in attesa" per 24 ore dalla proposta, poi è considerato
