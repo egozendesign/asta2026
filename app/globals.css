@@ -406,7 +406,12 @@ footer{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;
 .mk-svincolo input{flex:1;min-width:180px}
 .mk-svincolo .btn{padding:8px 18px;flex:none}
 .mk-svincolo-hint{flex-basis:100%;margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
-.mk-svincolo.ro{display:flex;align-items:baseline;gap:8px}
+/* La conferma sta sopra l'aiuto e si prende il colore d'accento: è l'unico
+   passaggio della pagina che non si può disfare. */
+.mk-svincolo-conf{flex-basis:100%;margin:0;overflow:hidden;
+  font-size:12.5px;line-height:1.5;color:var(--txt)}
+.mk-svincolo-conf strong{color:var(--acc)}
+.mk-svincolo.ro{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .mk-svincolo.ro .mk-label{display:inline;flex:none}
 .mk-svincolo-nome{font-size:13.5px;font-weight:600;color:var(--txt);overflow-wrap:anywhere}
 @media(max-width:600px){

@@ -9,9 +9,9 @@
 //
 // Modello dati: liste Redis append-only. Le offerte sono eventi, non righe
 // da aggiornare, quindi RPUSH (atomico) basta a gestire i rilanci simultanei —
-// non serve né lock né scrittura ottimistica. L'unica eccezione sono gli
-// svincoli dichiarati: lì la riga si riscrive, e il perché è spiegato su
-// upsertSvincolo().
+// non serve né lock né scrittura ottimistica. Gli svincoli dichiarati sono una
+// lista a parte con la stessa forma, ma con un vincolo in più: una riga sola
+// per asta, e non si riscrive (vedi addSvincolo).
 //
 // Variabili d'ambiente: le stesse di /api/state (vedi app/lib/session.js).
 
@@ -258,58 +258,34 @@ async function renameAuction(oldKey, newName, skipId) {
 
 /* ---------- svincoli dichiarati ---------- */
 
-// A differenza di un'offerta, la dichiarazione di svincolo non è un evento: è
-// un campo che la squadra corregge finché non è quello giusto. Accodarne una
-// nuova a ogni modifica lascerebbe in lista tutte le versioni precedenti e
-// costringerebbe a indovinare quale vale, quindi ne esiste al massimo una per
-// coppia asta+squadra e la si riscrive sul posto.
-// Il controllo con LINDEX prima di LSET è lo stesso di updateById(): l'indice
-// letto può spostarsi se nel frattempo sparisce una riga più in alto.
-async function upsertSvincolo(astaKey, team, nome) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const out = await redis(['LRANGE', KEYS.svincoli, '0', '-1']);
-    const raw = Array.isArray(out.result) ? out.result : [];
-
-    let index = -1;
-    let current = null;
-    for (let i = 0; i < raw.length; i++) {
-      let r;
-      try { r = JSON.parse(raw[i]); } catch { continue; }
-      if (r?.asta === astaKey && r?.team === team) { index = i; current = raw[i]; break; }
-    }
-
-    if (index < 0) {
-      await append(KEYS.svincoli, {
-        id: crypto.randomUUID(),
-        team,
-        asta: astaKey,
-        nome,
-        data: new Date().toISOString(),
-      });
-      return { ok: true };
-    }
-
-    const record = { ...JSON.parse(current), nome, data: new Date().toISOString() };
-    const check = await redis(['LINDEX', KEYS.svincoli, String(index)]);
-    if (check.result !== current) continue; // la lista e' cambiata: rileggi
-    await redis(['LSET', KEYS.svincoli, String(index), JSON.stringify(record)]);
-    return { ok: true };
-  }
-  return { error: 'La lista e\' cambiata durante la modifica. Riprova.', status: 409 };
-}
-
-// Campo svuotato: la squadra sta dicendo che non deve svincolare nessuno.
-// Niente riga vuota in lista, si toglie e basta.
-async function removeSvincolo(astaKey, team) {
+// Si scrive una volta sola. Lo svincolo è un impegno verso le altre squadre,
+// non un appunto privato: se si potesse riscrivere, chi si è aggiudicato il
+// giocatore potrebbe cambiare idea dopo aver visto come si muovono gli altri,
+// e la riga non varrebbe più niente. Quindi la seconda dichiarazione sulla
+// stessa asta viene rifiutata; per correggere un refuso c'è il backoffice.
+//
+// Due invii simultanei della stessa squadra passerebbero entrambi il
+// controllo, ma non ci arrivano: il cooldown per squadra (WRITE_COOLDOWN_S)
+// scarta il secondo prima di qui.
+async function addSvincolo(astaKey, team, nome) {
   const out = await redis(['LRANGE', KEYS.svincoli, '0', '-1']);
   const raw = Array.isArray(out.result) ? out.result : [];
+
   for (const line of raw) {
     let r;
     try { r = JSON.parse(line); } catch { continue; }
-    if (r?.asta !== astaKey || r?.team !== team) continue;
-    await redis(['LREM', KEYS.svincoli, '1', line]);
-    return { ok: true };
+    if (r?.asta === astaKey && r?.team === team) {
+      return { error: `Hai già dichiarato ${r.nome}: lo svincolo si indica una volta sola.`, status: 409 };
+    }
   }
+
+  await append(KEYS.svincoli, {
+    id: crypto.randomUUID(),
+    team,
+    asta: astaKey,
+    nome,
+    data: new Date().toISOString(),
+  });
   return { ok: true };
 }
 
@@ -515,8 +491,8 @@ export async function POST(request) {
     // Chi si aggiudica un giocatore con la rosa piena deve liberare uno slot.
     // Finora quel nome girava a voce nel gruppo e non risultava da nessuna
     // parte: qui sta attaccato all'asta che lo ha reso necessario, e lo vedono
-    // tutti. Lo scrive solo chi ha vinto, e solo quando l'asta e' chiusa —
-    // prima non c'e' niente da svincolare.
+    // tutti. Lo scrive solo chi ha vinto, solo quando l'asta e' chiusa (prima
+    // non c'e' niente da svincolare) e una volta sola: vedi addSvincolo().
     if (action === 'svincolo') {
       const chiave = String(body.asta || '');
       if (!chiave) return json({ error: 'Asta non indicata.' }, 400);
@@ -533,18 +509,11 @@ export async function POST(request) {
         );
       }
 
-      // Campo svuotato = nessuno da svincolare: e' una risposta valida, non un
-      // errore di compilazione.
       const nome = cleanName(body.nome);
-      if (!nome) {
-        await removeSvincolo(chiave, team);
-        return json({ team, mercato: await readAll() });
-      }
-
       const nameErr = validateName(nome);
       if (nameErr) return json({ error: nameErr }, 400);
 
-      const res = await upsertSvincolo(chiave, team, nome);
+      const res = await addSvincolo(chiave, team, nome);
       if (res.error) return json({ error: res.error }, res.status);
       return json({ team, mercato: await readAll() });
     }
@@ -607,6 +576,12 @@ export async function POST(request) {
     if (action === 'del') {
       const key = KEYS[body.lista];
       if (!key) return json({ error: 'Lista non valida.' }, 400);
+      // Gli svincoli no: cancellare la propria riga e riscriverla sarebbe il
+      // modo piu' comodo per cambiare idea, che e' esattamente cio' che
+      // addSvincolo() impedisce dalla porta principale.
+      if (body.lista === 'svincoli') {
+        return json({ error: 'Lo svincolo dichiarato non si cancella: scrivi a chi gestisce il mercato.' }, 403);
+      }
       if (typeof body.id !== 'string' || !body.id) return json({ error: 'Id mancante.' }, 400);
 
       const res = await removeOwn(key, body.id, team);

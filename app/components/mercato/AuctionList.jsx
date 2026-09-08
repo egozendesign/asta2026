@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMercato } from './MercatoProvider';
 import { deriveAuctions, findSvincolo, formatDate, LIMITS } from '../../lib/mercato';
@@ -63,46 +63,49 @@ function Rilancio({ asta }) {
    sta attaccato all'asta che lo ha reso necessario.
 
    Compare solo a asta chiusa: prima non c'è ancora niente da svincolare. Lo
-   scrive solo la squadra che ha vinto; gli altri lo leggono e basta, perché
-   metà del motivo per cui esiste è che sia verificabile da tutti. Campo vuoto
-   vuol dire "non devo svincolare nessuno", che è una risposta valida: si salva
-   vuoto e la riga sparisce. */
+   scrive solo la squadra che ha vinto, e una volta sola — è un impegno verso
+   le altre squadre, non un appunto privato, e poterlo riscrivere dopo aver
+   visto come si muove il mercato lo svuoterebbe di senso. Per questo il campo
+   sparisce appena è compilato e resta la riga in chiaro per tutti; per un
+   refuso c'è il backoffice. E per questo si salva in due tempi: una conferma
+   costa un click, un nome sbagliato costa un giro dall'admin. */
 function Svincolo({ asta, record }) {
   const { me, svincola } = useMercato();
-  const salvato = record?.nome || '';
-  const [valore, setValore] = useState(salvato);
+  const [valore, setValore] = useState('');
+  const [conferma, setConferma] = useState(false);
   const [busy, setBusy] = useState(false);
+  const reduce = useReducedMotion();
 
-  // Il polling riscrive `mercato` ogni 15s: se il valore salvato cambia da
-  // fuori (altra scheda, backoffice) il campo lo segue, ma senza toccare
-  // quello che si sta scrivendo quando il valore salvato è rimasto lo stesso.
-  const ultimoSalvato = useRef(salvato);
-  useEffect(() => {
-    if (ultimoSalvato.current === salvato) return;
-    ultimoSalvato.current = salvato;
-    setValore(salvato);
-  }, [salvato]);
-
+  const salvato = record?.nome || '';
   const vincitore = Boolean(me) && asta.leadingTeam === me;
 
-  if (!vincitore) {
+  if (salvato || !vincitore) {
     if (!salvato) return null;
     return (
-      <p className="mk-svincolo ro">
+      <div className="mk-svincolo ro">
         <span className="mk-label">Svincola</span>
         <span className="mk-svincolo-nome">{salvato}</span>
-      </p>
+        {vincitore && (
+          <p className="mk-svincolo-hint">
+            Dichiarato: non si cambia più. Se è sbagliato, scrivi a chi gestisce il mercato.
+          </p>
+        )}
+      </div>
     );
   }
 
+  const pulito = valore.trim();
+
   const submit = async (e) => {
     e.preventDefault();
+    if (pulito.length < 3) return;
+    // primo invio: si chiede conferma, non si scrive niente
+    if (!conferma) { setConferma(true); return; }
     setBusy(true);
-    await svincola(asta.key, valore);
+    await svincola(asta.key, pulito);
     setBusy(false);
+    setConferma(false);
   };
-
-  const pulito = valore.trim();
 
   return (
     <form className="mk-svincolo" onSubmit={submit}>
@@ -112,14 +115,31 @@ function Svincolo({ asta, record }) {
         value={valore}
         maxLength={LIMITS.nome}
         placeholder="Es. L.Martinez - Inter - Pc"
-        onChange={(e) => setValore(e.target.value)}
+        onChange={(e) => { setValore(e.target.value); setConferma(false); }}
       />
-      <button className="btn" type="submit" disabled={busy || pulito === salvato.trim()}>
-        {busy ? 'Salvo…' : salvato ? 'Aggiorna' : 'Salva'}
+      <button className="btn" type="submit" disabled={busy || pulito.length < 3}>
+        {busy ? 'Salvo…' : conferma ? 'Confermo' : 'Dichiara'}
       </button>
+
+      <AnimatePresence initial={false}>
+        {conferma && (
+          <motion.p
+            className="mk-svincolo-conf"
+            initial={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            transition={{ duration: reduce ? 0 : 0.2 }}
+          >
+            Svincoli <strong>{pulito}</strong> per prendere {asta.displayName}? Premi ancora per
+            confermare: dopo non si cambia.
+          </motion.p>
+        )}
+      </AnimatePresence>
+
       <p className="mk-svincolo-hint">
         Hai vinto {asta.displayName}: se per prenderlo devi liberare uno slot, scrivi qui chi
-        svincoli (cognome - squadra - ruolo). Se non ti serve, lascia il campo vuoto e salva.
+        svincoli (cognome - squadra - ruolo). Si dichiara una volta sola. Se non devi svincolare
+        nessuno, lascia il campo vuoto.
       </p>
     </form>
   );
