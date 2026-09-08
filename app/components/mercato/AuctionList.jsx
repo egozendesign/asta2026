@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMercato } from './MercatoProvider';
-import { deriveAuctions, findSvincolo, formatDate, LIMITS } from '../../lib/mercato';
+import { deriveAuctions, formatDate, LIMITS } from '../../lib/mercato';
 import Countdown from './Countdown';
 
 /* Rilancio dentro la scheda dell'asta.
@@ -62,44 +62,64 @@ function Rilancio({ asta }) {
    spariva, e a fine mercato nessuno sapeva più chi aveva svincolato chi. Qui
    sta attaccato all'asta che lo ha reso necessario.
 
-   Compare solo a asta chiusa: prima non c'è ancora niente da svincolare. Lo
-   scrive solo la squadra che ha vinto, e una volta sola — è un impegno verso
-   le altre squadre, non un appunto privato, e poterlo riscrivere dopo aver
-   visto come si muove il mercato lo svuoterebbe di senso. Per questo il campo
-   sparisce appena è compilato e resta la riga in chiaro per tutti; per un
-   refuso c'è il backoffice. E per questo si salva in due tempi: una conferma
-   costa un click, un nome sbagliato costa un giro dall'admin. */
-function Svincolo({ asta, record }) {
+   Il tempo per rispondere è di 6 ore dalla chiusura, ed è la risposta a
+   chiudere l'asta: senza scadenza un vincitore distratto lasciava il giocatore
+   in un limbo per giorni, e le altre squadre non sapevano se rifare un'offerta
+   o aspettare. Le risposte valide sono due — un nome, oppure "non devo
+   svincolare nessuno" — e valgono uguale: chiudono. Il silenzio no: a tempo
+   scaduto l'asta si annulla.
+
+   Si risponde una volta sola, ed è un impegno verso le altre squadre: poterlo
+   riscrivere dopo aver visto come si muove il mercato lo svuoterebbe di senso.
+   Per questo si salva in due tempi — una conferma costa un click, un nome
+   sbagliato costa un giro dall'admin. */
+function Svincolo({ asta }) {
   const { me, svincola } = useMercato();
   const [valore, setValore] = useState('');
-  const [conferma, setConferma] = useState(false);
+  // null | 'nome' | 'nessuno': quale delle due risposte sta aspettando conferma
+  const [conferma, setConferma] = useState(null);
   const [busy, setBusy] = useState(false);
   const reduce = useReducedMotion();
 
-  const salvato = record?.nome || '';
   const vincitore = Boolean(me) && asta.leadingTeam === me;
 
-  if (salvato || !vincitore) {
-    if (!salvato) return null;
+  if (asta.svincolo) {
     return (
       <p className="mk-svincolo ro">
         <span className="mk-label">Svincola</span>
-        <span className="mk-svincolo-nome">{salvato}</span>
+        <span className="mk-svincolo-nome">
+          {asta.svincolo.nessuno ? 'nessuno' : asta.svincolo.nome}
+        </span>
+      </p>
+    );
+  }
+
+  // Asta annullata: non c'è più niente da dichiarare, per nessuno.
+  if (asta.phase === 'annullata') return null;
+
+  if (!vincitore) {
+    return (
+      <p className="mk-svincolo-hint">
+        {asta.leadingTeam} ha 6 ore per dichiarare lo svincolo. Se non lo fa, l’asta si annulla e
+        il giocatore torna fra gli svincolati.
       </p>
     );
   }
 
   const pulito = valore.trim();
 
-  const submit = async (e) => {
+  const invia = async (nessuno) => {
+    setBusy(true);
+    await svincola(asta.key, nessuno ? { nessuno: true } : { nome: pulito });
+    setBusy(false);
+    setConferma(null);
+  };
+
+  const submit = (e) => {
     e.preventDefault();
     if (pulito.length < 3) return;
-    // primo invio: si chiede conferma, non si scrive niente
-    if (!conferma) { setConferma(true); return; }
-    setBusy(true);
-    await svincola(asta.key, pulito);
-    setBusy(false);
-    setConferma(false);
+    if (conferma !== 'nome') { setConferma('nome'); return; }
+    invia(false);
   };
 
   return (
@@ -110,10 +130,18 @@ function Svincolo({ asta, record }) {
         value={valore}
         maxLength={LIMITS.nome}
         placeholder="Es. L.Martinez - Inter - Pc"
-        onChange={(e) => { setValore(e.target.value); setConferma(false); }}
+        onChange={(e) => { setValore(e.target.value); setConferma(null); }}
       />
       <button className="btn" type="submit" disabled={busy || pulito.length < 3}>
-        {busy ? 'Salvo…' : conferma ? 'Confermo' : 'Dichiara'}
+        {busy ? 'Salvo…' : conferma === 'nome' ? 'Confermo' : 'Dichiara'}
+      </button>
+      <button
+        type="button"
+        className="btn ghost mk-svincolo-none"
+        disabled={busy}
+        onClick={() => (conferma === 'nessuno' ? invia(true) : setConferma('nessuno'))}
+      >
+        {conferma === 'nessuno' ? 'Confermo: nessuno' : 'Non devo svincolare nessuno'}
       </button>
 
       <AnimatePresence initial={false}>
@@ -125,16 +153,20 @@ function Svincolo({ asta, record }) {
             exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
             transition={{ duration: reduce ? 0 : 0.2 }}
           >
-            Svincoli <strong>{pulito}</strong> per prendere {asta.displayName}? Premi ancora per
-            confermare: dopo non si cambia.
+            {conferma === 'nome' ? (
+              <>Svincoli <strong>{pulito}</strong> per prendere {asta.displayName}?</>
+            ) : (
+              <>Prendi {asta.displayName} <strong>senza svincolare nessuno</strong>?</>
+            )}{' '}
+            Premi ancora per confermare: dopo non si cambia.
           </motion.p>
         )}
       </AnimatePresence>
 
       <p className="mk-svincolo-hint">
-        Hai vinto {asta.displayName}: se per prenderlo devi liberare uno slot, scrivi qui chi
-        svincoli (cognome - squadra - ruolo). Si dichiara una volta sola. Se non devi svincolare
-        nessuno, lascia il campo vuoto.
+        Hai vinto {asta.displayName}: hai 6 ore per dire chi svincoli (cognome - squadra - ruolo),
+        o per dichiarare che non devi svincolare nessuno. Se non rispondi entro il tempo, l’asta si
+        annulla.
       </p>
     </form>
   );
@@ -146,16 +178,15 @@ function Svincolo({ asta, record }) {
    senza aspettare il polling. */
 export default function AuctionList() {
   const { mercato, me, cancella } = useMercato();
-  const svincoli = mercato.svincoli || [];
   const [open, setOpen] = useState(() => new Set());
   const [tick, setTick] = useState(0);
   const reduce = useReducedMotion();
 
   const auctions = useMemo(
-    () => deriveAuctions(mercato.svincolati, Date.now()),
-    // tick forza il ricalcolo alla scadenza di un'asta
+    () => deriveAuctions(mercato.svincolati, Date.now(), mercato.svincoli || []),
+    // tick forza il ricalcolo alla scadenza di un'asta o della finestra di svincolo
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mercato.svincolati, tick]
+    [mercato.svincolati, mercato.svincoli, tick]
   );
 
   const toggle = (key) => {
@@ -181,7 +212,9 @@ export default function AuctionList() {
           <motion.article
             key={a.key}
             layout={!reduce}
-            className={`mk-card${a.closed ? ' closed' : ''}${mine ? ' mine' : ''}`}
+            className={`mk-card${a.phase === 'conclusa' ? ' closed' : ''}${
+              a.phase === 'annullata' ? ' void' : ''
+            }${mine && a.phase !== 'annullata' ? ' mine' : ''}`}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduce ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -200,20 +233,31 @@ export default function AuctionList() {
               </div>
 
               <div className="mk-card-state">
-                {a.closed ? (
-                  <span className="mk-badge done">Aggiudicato</span>
-                ) : (
+                {a.phase === 'aperta' && (
                   <>
                     <span className="mk-label">Tempo rimasto</span>
                     <Countdown endsAt={a.endsAt} onEnd={() => setTick((t) => t + 1)} />
                   </>
                 )}
+                {/* le 6 ore per lo svincolo: stesso cronometro, altra scadenza */}
+                {a.phase === 'attesa' && (
+                  <>
+                    <span className="mk-label">Svincolo entro</span>
+                    <Countdown endsAt={a.svincoloEndsAt} onEnd={() => setTick((t) => t + 1)} />
+                  </>
+                )}
+                {a.phase === 'conclusa' && <span className="mk-badge done">Aggiudicato</span>}
+                {a.phase === 'annullata' && <span className="mk-badge void">Annullata</span>}
               </div>
             </div>
 
-            {a.closed
-              ? <Svincolo asta={a} record={findSvincolo(svincoli, a.key, a.leadingTeam)} />
-              : <Rilancio asta={a} />}
+            {a.phase === 'aperta' ? <Rilancio asta={a} /> : <Svincolo asta={a} />}
+
+            {a.phase === 'annullata' && (
+              <p className="mk-void-note">
+                Asta annullata, il giocatore torna negli svincolati.
+              </p>
+            )}
 
             <button
               type="button"
@@ -238,7 +282,7 @@ export default function AuctionList() {
                       <span className="mk-bid-team">{b.team}</span>
                       <span className="mk-bid-offer">{b.offer} FM</span>
                       <span className="mk-bid-date">{formatDate(new Date(b.ts).toISOString())}</span>
-                      {b.team === me && !a.closed && (
+                      {b.team === me && a.phase === 'aperta' && (
                         <button
                           type="button"
                           className="mk-del"
