@@ -139,6 +139,17 @@ export function deriveAuctions(records, now = Date.now()) {
   return auctions;
 }
 
+/* ---------- svincoli dichiarati ---------- */
+
+// Chi vince un'asta con la rosa piena deve liberare uno slot. La dichiarazione
+// è una riga { id, team, asta (playerKey), nome, data }: al massimo una per
+// coppia asta+squadra, perché è un campo che si corregge, non un evento che si
+// accumula come le offerte — il server la riscrive invece di accodarla.
+export function findSvincolo(records, astaKey, team) {
+  if (!Array.isArray(records) || !astaKey || !team) return null;
+  return records.find((r) => r?.asta === astaKey && r?.team === team) || null;
+}
+
 // Uno scambio resta "in attesa" per 24 ore dalla proposta, poi è considerato
 // concluso. Nessuna accettazione esplicita: è così anche nell'app originale.
 export function tradeStatus(t, now = Date.now()) {

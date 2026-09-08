@@ -12,7 +12,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 const MercatoCtx = createContext(null);
 export const useMercato = () => useContext(MercatoCtx);
 
-const EMPTY = { svincolati: [], scambi: [], proposti: [], updated: null };
+const EMPTY = { svincolati: [], scambi: [], proposti: [], svincoli: [], updated: null };
 
 // L'originale aggiornava ogni 30s con quote e lock perché ogni lettura
 // consumava la quota gratuita di Airtable. Qui il dato è nostro: 15s, in linea
@@ -83,6 +83,9 @@ export default function MercatoProvider({ children }) {
   // Rilancio su un'asta esistente: si manda la chiave dell'asta, non il nome
   // scritto a mano, cosi' il rilancio non puo' finire su un'asta sbagliata.
   const rilancia = useCallback((asta, offerta) => send('rilancio', { asta, offerta }), [send]);
+  // Giocatore che la squadra libera per far posto a quello vinto all'asta.
+  // Nome vuoto = non deve svincolare nessuno: il server toglie la riga.
+  const svincola = useCallback((asta, nome) => send('svincolo', { asta, nome }), [send]);
   const proponiScambio = useCallback((payload) => send('scambio', payload), [send]);
   const proponiGiocatore = useCallback((nome, ruoli) => send('proposta', { nome, ruoli }), [send]);
   const cancella = useCallback((lista, id) => send('del', { lista, id }), [send]);
@@ -192,7 +195,7 @@ export default function MercatoProvider({ children }) {
     <MercatoCtx.Provider
       value={{
         mercato, me, status, login, logout,
-        offri, rilancia, proponiScambio, proponiGiocatore, cancella,
+        offri, rilancia, svincola, proponiScambio, proponiGiocatore, cancella,
         admin, adminAvailable, adminStatus, adminLogin, adminLogout, adminEdit, adminDel,
       }}
     >
