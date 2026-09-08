@@ -7,9 +7,11 @@
 // client non vede nessun segreto: parla solo con questa route, che riconosce
 // la squadra dal cookie di sessione firmato di /api/state.
 //
-// Modello dati: tre liste Redis append-only. Le offerte sono eventi, non righe
+// Modello dati: liste Redis append-only. Le offerte sono eventi, non righe
 // da aggiornare, quindi RPUSH (atomico) basta a gestire i rilanci simultanei —
-// non serve né lock né scrittura ottimistica.
+// non serve né lock né scrittura ottimistica. L'unica eccezione sono gli
+// svincoli dichiarati: lì la riga si riscrive, e il perché è spiegato su
+// upsertSvincolo().
 //
 // Variabili d'ambiente: le stesse di /api/state (vedi app/lib/session.js).
 
@@ -49,6 +51,10 @@ const KEYS = {
   svincolati: 'asta2026:mercato:svincolati',
   scambi: 'asta2026:mercato:scambi',
   proposti: 'asta2026:mercato:proposti',
+  // Dichiarazioni di svincolo: chi vince un'asta con la rosa piena scrive qui
+  // chi libera. Lista a parte e non campo dell'offerta perche' le offerte sono
+  // eventi immutabili — una dichiarazione invece si corregge.
+  svincoli: 'asta2026:mercato:svincoli',
 };
 
 // Anti-spam: una scrittura ogni 3s per squadra. Non è una quota API come
@@ -155,6 +161,15 @@ function applyPatch(lista, record, patch) {
     return { record: out };
   }
 
+  if (lista === 'svincoli') {
+    if (has('nome')) {
+      const err = validateName(patch.nome);
+      if (err) return { error: err, status: 400 };
+      out.nome = cleanName(patch.nome);
+    }
+    return { record: out };
+  }
+
   // proposti
   if (has('nome')) {
     const err = validateName(patch.nome);
@@ -241,13 +256,71 @@ async function renameAuction(oldKey, newName, skipId) {
   return touched;
 }
 
+/* ---------- svincoli dichiarati ---------- */
+
+// A differenza di un'offerta, la dichiarazione di svincolo non è un evento: è
+// un campo che la squadra corregge finché non è quello giusto. Accodarne una
+// nuova a ogni modifica lascerebbe in lista tutte le versioni precedenti e
+// costringerebbe a indovinare quale vale, quindi ne esiste al massimo una per
+// coppia asta+squadra e la si riscrive sul posto.
+// Il controllo con LINDEX prima di LSET è lo stesso di updateById(): l'indice
+// letto può spostarsi se nel frattempo sparisce una riga più in alto.
+async function upsertSvincolo(astaKey, team, nome) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const out = await redis(['LRANGE', KEYS.svincoli, '0', '-1']);
+    const raw = Array.isArray(out.result) ? out.result : [];
+
+    let index = -1;
+    let current = null;
+    for (let i = 0; i < raw.length; i++) {
+      let r;
+      try { r = JSON.parse(raw[i]); } catch { continue; }
+      if (r?.asta === astaKey && r?.team === team) { index = i; current = raw[i]; break; }
+    }
+
+    if (index < 0) {
+      await append(KEYS.svincoli, {
+        id: crypto.randomUUID(),
+        team,
+        asta: astaKey,
+        nome,
+        data: new Date().toISOString(),
+      });
+      return { ok: true };
+    }
+
+    const record = { ...JSON.parse(current), nome, data: new Date().toISOString() };
+    const check = await redis(['LINDEX', KEYS.svincoli, String(index)]);
+    if (check.result !== current) continue; // la lista e' cambiata: rileggi
+    await redis(['LSET', KEYS.svincoli, String(index), JSON.stringify(record)]);
+    return { ok: true };
+  }
+  return { error: 'La lista e\' cambiata durante la modifica. Riprova.', status: 409 };
+}
+
+// Campo svuotato: la squadra sta dicendo che non deve svincolare nessuno.
+// Niente riga vuota in lista, si toglie e basta.
+async function removeSvincolo(astaKey, team) {
+  const out = await redis(['LRANGE', KEYS.svincoli, '0', '-1']);
+  const raw = Array.isArray(out.result) ? out.result : [];
+  for (const line of raw) {
+    let r;
+    try { r = JSON.parse(line); } catch { continue; }
+    if (r?.asta !== astaKey || r?.team !== team) continue;
+    await redis(['LREM', KEYS.svincoli, '1', line]);
+    return { ok: true };
+  }
+  return { ok: true };
+}
+
 async function readAll() {
-  const [svincolati, scambi, proposti] = await Promise.all([
+  const [svincolati, scambi, proposti, svincoli] = await Promise.all([
     readList(KEYS.svincolati),
     readList(KEYS.scambi),
     readList(KEYS.proposti),
+    readList(KEYS.svincoli),
   ]);
-  return { svincolati, scambi, proposti, updated: new Date().toISOString() };
+  return { svincolati, scambi, proposti, svincoli, updated: new Date().toISOString() };
 }
 
 async function hitCooldown(team) {
@@ -435,6 +508,44 @@ export async function POST(request) {
         data: new Date().toISOString(),
       };
       await append(KEYS.svincolati, record);
+      return json({ team, mercato: await readAll() });
+    }
+
+    /* --- giocatore da svincolare per l'asta vinta --- */
+    // Chi si aggiudica un giocatore con la rosa piena deve liberare uno slot.
+    // Finora quel nome girava a voce nel gruppo e non risultava da nessuna
+    // parte: qui sta attaccato all'asta che lo ha reso necessario, e lo vedono
+    // tutti. Lo scrive solo chi ha vinto, e solo quando l'asta e' chiusa —
+    // prima non c'e' niente da svincolare.
+    if (action === 'svincolo') {
+      const chiave = String(body.asta || '');
+      if (!chiave) return json({ error: 'Asta non indicata.' }, 400);
+
+      const asta = deriveAuctions(await readList(KEYS.svincolati)).find((a) => a.key === chiave);
+      if (!asta) return json({ error: 'Asta non trovata.' }, 404);
+      if (!asta.closed) {
+        return json({ error: 'L’asta è ancora aperta: lo svincolo si indica quando è aggiudicata.' }, 409);
+      }
+      if (asta.leadingTeam !== team) {
+        return json(
+          { error: `${asta.displayName} è andato a ${asta.leadingTeam}: lo svincolo lo indica chi si è aggiudicato il giocatore.` },
+          403
+        );
+      }
+
+      // Campo svuotato = nessuno da svincolare: e' una risposta valida, non un
+      // errore di compilazione.
+      const nome = cleanName(body.nome);
+      if (!nome) {
+        await removeSvincolo(chiave, team);
+        return json({ team, mercato: await readAll() });
+      }
+
+      const nameErr = validateName(nome);
+      if (nameErr) return json({ error: nameErr }, 400);
+
+      const res = await upsertSvincolo(chiave, team, nome);
+      if (res.error) return json({ error: res.error }, res.status);
       return json({ team, mercato: await readAll() });
     }
 

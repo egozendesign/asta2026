@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMercato } from './MercatoProvider';
-import { deriveAuctions, formatDate, LIMITS } from '../../lib/mercato';
+import { deriveAuctions, findSvincolo, formatDate, LIMITS } from '../../lib/mercato';
 import Countdown from './Countdown';
 
 /* Rilancio dentro la scheda dell'asta.
@@ -56,12 +56,82 @@ function Rilancio({ asta }) {
   );
 }
 
+/* Chi si aggiudica un giocatore con la rosa piena deve liberarne uno.
+
+   Quel nome finora non aveva un posto dove stare: si diceva nel gruppo e
+   spariva, e a fine mercato nessuno sapeva più chi aveva svincolato chi. Qui
+   sta attaccato all'asta che lo ha reso necessario.
+
+   Compare solo a asta chiusa: prima non c'è ancora niente da svincolare. Lo
+   scrive solo la squadra che ha vinto; gli altri lo leggono e basta, perché
+   metà del motivo per cui esiste è che sia verificabile da tutti. Campo vuoto
+   vuol dire "non devo svincolare nessuno", che è una risposta valida: si salva
+   vuoto e la riga sparisce. */
+function Svincolo({ asta, record }) {
+  const { me, svincola } = useMercato();
+  const salvato = record?.nome || '';
+  const [valore, setValore] = useState(salvato);
+  const [busy, setBusy] = useState(false);
+
+  // Il polling riscrive `mercato` ogni 15s: se il valore salvato cambia da
+  // fuori (altra scheda, backoffice) il campo lo segue, ma senza toccare
+  // quello che si sta scrivendo quando il valore salvato è rimasto lo stesso.
+  const ultimoSalvato = useRef(salvato);
+  useEffect(() => {
+    if (ultimoSalvato.current === salvato) return;
+    ultimoSalvato.current = salvato;
+    setValore(salvato);
+  }, [salvato]);
+
+  const vincitore = Boolean(me) && asta.leadingTeam === me;
+
+  if (!vincitore) {
+    if (!salvato) return null;
+    return (
+      <p className="mk-svincolo ro">
+        <span className="mk-label">Svincola</span>
+        <span className="mk-svincolo-nome">{salvato}</span>
+      </p>
+    );
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    await svincola(asta.key, valore);
+    setBusy(false);
+  };
+
+  const pulito = valore.trim();
+
+  return (
+    <form className="mk-svincolo" onSubmit={submit}>
+      <label className="mk-label" htmlFor={`svi-${asta.key}`}>Giocatore da svincolare</label>
+      <input
+        id={`svi-${asta.key}`}
+        value={valore}
+        maxLength={LIMITS.nome}
+        placeholder="Es. L.Martinez - Inter - Pc"
+        onChange={(e) => setValore(e.target.value)}
+      />
+      <button className="btn" type="submit" disabled={busy || pulito === salvato.trim()}>
+        {busy ? 'Salvo…' : salvato ? 'Aggiorna' : 'Salva'}
+      </button>
+      <p className="mk-svincolo-hint">
+        Hai vinto {asta.displayName}: se per prenderlo devi liberare uno slot, scrivi qui chi
+        svincoli (cognome - squadra - ruolo). Se non ti serve, lascia il campo vuoto e salva.
+      </p>
+    </form>
+  );
+}
+
 /* Le aste non sono righe salvate: si ricostruiscono dalle offerte a ogni
    render (vedi deriveAuctions). `tick` esiste solo per rifare il calcolo
    quando un cronometro arriva a zero, così la card passa da aperta a chiusa
    senza aspettare il polling. */
 export default function AuctionList() {
   const { mercato, me, cancella } = useMercato();
+  const svincoli = mercato.svincoli || [];
   const [open, setOpen] = useState(() => new Set());
   const [tick, setTick] = useState(0);
   const reduce = useReducedMotion();
@@ -126,7 +196,9 @@ export default function AuctionList() {
               </div>
             </div>
 
-            {!a.closed && <Rilancio asta={a} />}
+            {a.closed
+              ? <Svincolo asta={a} record={findSvincolo(svincoli, a.key, a.leadingTeam)} />
+              : <Rilancio asta={a} />}
 
             <button
               type="button"

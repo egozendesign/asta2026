@@ -19,6 +19,7 @@ const LISTE = [
   { id: 'svincolati', label: 'Offerte svincolati' },
   { id: 'scambi', label: 'Scambi' },
   { id: 'proposti', label: 'Giocatori proposti' },
+  { id: 'svincoli', label: 'Svincoli dichiarati' },
 ];
 
 const FIELDS = {
@@ -40,11 +41,19 @@ const FIELDS = {
     { k: 'nome', label: 'Giocatore', type: 'text' },
     { k: 'ruoli', label: 'Ruoli cercati', type: 'roles' },
   ],
+  // L'asta a cui la dichiarazione si riferisce non e' modificabile: e' la
+  // chiave che la lega alla scheda giusta, e riscriverla a mano vorrebbe dire
+  // spostare lo svincolo su un'altra asta senza accorgersene.
+  svincoli: [
+    { k: 'team', label: 'Squadra', type: 'team' },
+    { k: 'nome', label: 'Giocatore svincolato', type: 'text' },
+  ],
 };
 
 // Riassunto di una riga quando non e' in modifica.
 function summary(lista, r) {
   if (lista === 'svincolati') return `${r.nome} — ${r.offerta} FM`;
+  if (lista === 'svincoli') return `svincola ${r.nome} (asta: ${r.asta})`;
   if (lista === 'scambi') {
     const off = r.creditiOfferti ? ` +${r.creditiOfferti}cr` : '';
     const ric = r.creditiRichiesti ? ` +${r.creditiRichiesti}cr` : '';
@@ -230,7 +239,7 @@ function ListaAdmin({ lista }) {
   const [confirm, setConfirm] = useState(null);
   const reduce = useReducedMotion();
 
-  const records = [...mercato[lista]].sort(
+  const records = [...(mercato[lista] || [])].sort(
     (a, b) => (Date.parse(b.data) || 0) - (Date.parse(a.data) || 0)
   );
 
@@ -346,6 +355,7 @@ export default function AdminPanel() {
     svincolati: mercato.svincolati.length,
     scambi: mercato.scambi.length,
     proposti: mercato.proposti.length,
+    svincoli: (mercato.svincoli || []).length,
   };
 
   return (
