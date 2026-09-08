@@ -82,15 +82,10 @@ function Svincolo({ asta, record }) {
   if (salvato || !vincitore) {
     if (!salvato) return null;
     return (
-      <div className="mk-svincolo ro">
+      <p className="mk-svincolo ro">
         <span className="mk-label">Svincola</span>
         <span className="mk-svincolo-nome">{salvato}</span>
-        {vincitore && (
-          <p className="mk-svincolo-hint">
-            Dichiarato: non si cambia più. Se è sbagliato, scrivi a chi gestisce il mercato.
-          </p>
-        )}
-      </div>
+      </p>
     );
   }
 
